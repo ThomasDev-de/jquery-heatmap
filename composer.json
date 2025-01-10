@@ -1,0 +1,19 @@
+{
+  "name": "webcito/jquery-heatmap",
+  "version": "1.0.0",
+  "description": "description",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "thomas",
+      "email": "t.kirsch@webcito.de"
+    }
+  ],
+  "require": {
+    "components/jquery": "^3"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest"
+  }
+}
