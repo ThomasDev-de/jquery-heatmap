@@ -124,6 +124,11 @@
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
 
+            // Min und Max Werte ermitteln
+            const counts = data.map(entry => entry.count);
+            const minCount = Math.min(...counts);
+            const maxCount = Math.max(...counts);
+
             // Daten den Tagen zuordnen
             weeks.forEach(week => {
                 week.forEach((day, index) => {
@@ -200,9 +205,6 @@
                 });
 
                 // Monatsbeschriftung
-                // Monatsbeschriftung
-                const firstDayOfWeek = week.find(d => d.date);
-                // Monatsbeschriftung
                 const currentMonth = week.find(d => d.date && d.date.getDate() === 1)?.date.getMonth();
 
                 if (currentMonth !== undefined && currentMonth !== lastRenderedMonth) {
@@ -236,7 +238,7 @@
                     cell.css({
                         width: cellSizePx,
                         height: cellSizePx,
-                        backgroundColor: getContributionColor(dayEntry.count),
+                        backgroundColor: getContributionColor(dayEntry.count, minCount, maxCount),
                         borderRadius: '2px',
                         cursor: 'pointer',
                     });
@@ -270,32 +272,35 @@
         return mondayFirstLocales.some(l => locale.startsWith(l)) ? 1 : 0; // 1 = Montag, 0 = Sonntag
     }
 
-// Unterstützungsfunktion: Ermittelt die Woche des Jahres
-    function getWeekNumber(date, firstDayOfWeek) {
-        const firstDayOfYear = new Date(date.getFullYear(), 0, 1 + (7 - firstDayOfWeek));
-        const pastDaysOfYear = (date - firstDayOfYear + 1) / (1000 * 60 * 60 * 24);
-        return Math.floor(pastDaysOfYear / 7);
-    }
 
-// Unterstützungsfunktion: Korrigiert die Lokalisierung der Wochentage
-    function getLocalizedDayOfWeek(date, firstDayOfWeek) {
-        const day = date.getDay(); // 0 = Sonntag, 1 = Montag, ..., 6 = Samstag
-        return (day - firstDayOfWeek + 7) % 7; // Verschiebung basierend auf dem ersten Wochentag
-    }
 
 // Unterstützungsfunktion: Farbskala für Contributions
-    function getContributionColor(count) {
+    function getContributionColor(count, minCount, maxCount) {
         if (count === 0) {
             return '#ebedf0';
-        } else if (count <= 5) {
-            return '#c6e48b';
-        } else if (count <= 15) {
-            return '#7bc96f';
-        } else if (count <= 30) {
-            return '#239a3b';
-        } else {
-            return '#196127';
         }
+
+        // Dynamische Farbgebung basierend auf dem Wertebereich.
+        let range = maxCount-minCount;
+        if (range===0) {
+            range = 1;
+        } // Handle case with all same values
+        const percentage = (count - minCount) / range ;
+
+        const getColor = (percentage) => {
+            if(percentage <= 0.25) {
+                return '#c6e48b';
+            }
+            if(percentage <= 0.5) {
+                return '#7bc96f';
+            }
+            if(percentage <= 0.75) {
+                return '#239a3b';
+            }
+            return '#196127';
+        };
+        return getColor(percentage)
+
     }
 
 

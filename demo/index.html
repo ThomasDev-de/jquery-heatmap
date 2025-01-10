@@ -25,7 +25,7 @@
             while (currentDate <= endDate) {
                 data.push({
                     date: currentDate.toISOString().split("T")[0], // Nur das Datum (YYYY-MM-DD)
-                    count: Math.floor(Math.random() * 101) // Zufällige Zahl zwischen 0 und 100
+                    count: Math.floor(Math.random() * 10) // Zufällige Zahl zwischen 0 und 100
                 });
 
                 // Einen Tag hinzufügen
@@ -76,14 +76,16 @@
 
         $('#heatmap')
             .heatmap({
-                year: 2024,
+                year: 2025,
                 gutter: 2,
                 cellSize: 14,
-                locale: 'en',
-                data: generateHeatmapDataForWord()
+                locale: 'de',
+                data: generateRandomDataFor2024()
             });
+        let i = 0;
         // setInterval(() => {
-        //     $('#heatmap').heatmap('setData', generateRandomDataFor2024());
+        //     $('#heatmap').heatmap('setData', i%3 !== 0 ? generateRandomDataFor2024() : generateHeatmapDataForWord());
+        //     i++;
         // }, 1000);
     }(jQuery))
 
