@@ -97,8 +97,8 @@
 
         // Lokale Optionen
         const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-        const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
+        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
+        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
         const firstDayOfWeek = getFirstDayOfWeek(locale);
 
         // Gutter einstellen (Abstand zwischen den Elementen)
@@ -172,7 +172,7 @@
             dayLabelColumn.append('<div></div>');
 
             // Tageslabels hinzufügen
-            Array.from({ length: 7 }, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
+            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
                 const tempDate = new Date(2024, 0, dayIndex); // Dummy-Werte für die Tagesnamen
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
@@ -238,7 +238,7 @@
                     cell.css({
                         width: cellSizePx,
                         height: cellSizePx,
-                        backgroundColor: getContributionColor(dayEntry.count, minCount, maxCount),
+                        backgroundColor: getContributionColor($el, dayEntry.count, minCount, maxCount),
                         borderRadius: '2px',
                         cursor: 'pointer',
                     });
@@ -273,36 +273,24 @@
     }
 
 
-
 // Unterstützungsfunktion: Farbskala für Contributions
-    function getContributionColor(count, minCount, maxCount) {
+    function getContributionColor($el, count, minCount, maxCount) {
+        const settings = getSettings($el);
+
         if (count === 0) {
-            return '#ebedf0';
+            return settings.colors['0'];
         }
 
-        // Dynamische Farbgebung basierend auf dem Wertebereich.
-        let range = maxCount-minCount;
-        if (range===0) {
-            range = 1;
-        } // Handle case with all same values
-        const percentage = (count - minCount) / range ;
+        const range = maxCount - minCount || 1; // Vermeidet Division durch 0
+        const percentage = (count - minCount) / range;
 
-        const getColor = (percentage) => {
-            if(percentage <= 0.25) {
-                return '#c6e48b';
-            }
-            if(percentage <= 0.5) {
-                return '#7bc96f';
-            }
-            if(percentage <= 0.75) {
-                return '#239a3b';
-            }
-            return '#196127';
-        };
-        return getColor(percentage)
+        const colorKeys = Object.keys(settings.colors)
+            .map(Number) // Konvertiert Keys zu Zahlen für korrekte Sortierung
+            .sort((a, b) => a - b)
+            .filter(key => key <= percentage);
 
+        return settings.colors[colorKeys.pop()] || settings.colors['1']; // Gibt Standardfarbe zurück, falls keine passende gefunden wird
     }
-
 
     $.fn.heatmap = function (options, params) {
         if ($(this).length > 1) {
@@ -321,13 +309,19 @@
             cellSize: 14,
             queryParams(params) {
                 return params;
+            },
+            colors: {
+                0: '#ebedf0',
+                0.25: '#c6e48b',
+                0.5: '#7bc96f',
+                0.75: '#239a3b',
+                1: '#196127'
             }
         };
 
         if (!isInitialized) {
             init($element, options);
-        }
-        else{
+        } else {
             console.log('heatmap:isInitialized');
         }
 
