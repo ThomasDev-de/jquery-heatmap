@@ -1,5 +1,42 @@
+/*!
+ * Heatmap Plugin
+ * Author: Your Name <your.email@example.com>
+ * Version: 1.0.0
+ * License: MIT
+ * Description: A jQuery plugin to create and render an interactive heatmap visualization.
+ * 
+ * Usage:
+ * - Initialize the heatmap on a jQuery element. For example: $('#heatmap').heatmap(settings);
+ * 
+ * Settings:
+ * - data (Array | String): Either an array of data points or a URL to fetch data.
+ * - year (Number): The year to display the heatmap for (default is the current year).
+ * - locale (String): The locale identifier for date formatting (default is 'en-US').
+ * - firstDayOfWeek (Number): The starting day of the week (0 for Sunday, 1 for Monday, etc.).
+ * - cellSize (Number): The size of each day cell in pixels (default is 14px).
+ * - gutter (String | Number): Space between cells or weeks (default is '2px').
+ * 
+ * Methods:
+ * - getSettings($el): Reads and returns the heatmap settings for a given element.
+ * - getData($el): Fetches or provides the data for the heatmap. Can handle local arrays or fetch from URLs.
+ * - calculateWeeks(year, firstDayOfWeek): Computes all weeks in a given year based on the first day of the week.
+ * - drawHeatmap($el): Creates the heatmap and draws it into the provided element.
+ * 
+ * Example:
+ * $('#heatmap').heatmap({
+ *    data: 'https://example.com/data',
+ *    year: 2023,
+ *    locale: 'en-US',
+ *    firstDayOfWeek: 1,
+ *    cellSize: 14,
+ *    gutter: '4px'
+ * });
+ * 
+ * Notes:
+ * - The plugin automatically handles week calculations for the provided year.
+ * - If data is provided via URL, a GET request will be sent with the specified year as a query parameter.
+ */
 (function ($) {
-
     function getSettings($el) {
         return $el.data('heatmapSettings');
     }
