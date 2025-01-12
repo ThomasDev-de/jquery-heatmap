@@ -19,7 +19,9 @@
             xhr = null;
         }
 
-        const query = settings.queryParams();
+        const query = {
+            year: settings.year || new Date().getFullYear()
+        };
 
         try {
             xhr = $.get(settings.data, query);
@@ -307,9 +309,6 @@
             data: null,
             gutter: 2,
             cellSize: 14,
-            queryParams(params) {
-                return params;
-            },
             colors: {
                 0: '#ebedf0',
                 0.25: '#c6e48b',
