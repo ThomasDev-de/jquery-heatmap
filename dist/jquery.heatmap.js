@@ -410,18 +410,26 @@
 // Unterstützungsfunktion: Ermitteln, ob die Woche mit Montag oder Sonntag startet
     function getFirstDayOfWeek(locale) {
         try {
-            // Ein bekanntes Datum, das ein Sonntag ist (1. Januar 2023)
-            const sampleSunday = new Date(2023, 0, 1); // Achtung: Monat ist 0-basiert!
+            // Ein bekanntes Datum, das ein Sonntag ist (z. B. 1. Januar 2023)
+            const sampleSunday = new Date(Date.UTC(2023, 0, 1)); // UTC verhindert Zeitzonen-Probleme
 
-            // Wochennummer für Locale prüfen
-            const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-            const weekDayIndex = sampleSunday.getDay(); // 0 = Sonntag, 1 = Montag ...
+            // Wir erstellen einen Formatter, der für die Locale arbeitet
+            const formatter = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
 
-            // Wenn der Wochentag "0" (Sonntag) ist, prüfen wir, ob Sonntag der erste Tag ist
-            return weekDayIndex === 0 ? 0 : 1; // 0 = Sonntag, 1 = Montag
+            // Holen der Wochentag-Bezeichnung (z. B. "S" für Sonntag oder "M" für Montag)
+            const formattedSunday = formatter.format(sampleSunday);
+
+            // Prüfen, ob der Sonntag der erste Tag der Woche für diese Locale ist
+            if (formattedSunday === 'S') {
+                return 0; // Sonntag als erster Tag der Woche
+            } else {
+                return 1; // Montag als erster Tag der Woche
+            }
         } catch (error) {
             console.error('Fehler bei der Bestimmung des ersten Wochentags:', error);
-            return 1; // Fallback: Standardwert Montag
+
+            // Fallback: Wir nehmen an, dass Montag der erste Wochentag ist (häufigste Einstellung)
+            return 1;
         }
     }
 
