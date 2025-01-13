@@ -345,11 +345,11 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        console.log(getSettings($el));
+        console.log('getContributionColor:settings', getSettings($el));
         const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
-            console.error('Fehlende Farb-Einstellungen in settings:', settings);
+            // console.error('Fehlende Farb-Einstellungen in settings:', settings);
             return '#ff0000'; // Fallback-Farbe z. B. Rot
         }
 
