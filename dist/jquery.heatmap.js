@@ -183,8 +183,9 @@
         let result;
 
         // Lade Daten (wie gehabt)
-        getData($el).then(data => {
-            console.log(data);
+        getData($el).then(rawData => {
+            const data = JSON.parse(rawData);
+
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
