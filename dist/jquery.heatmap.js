@@ -184,7 +184,8 @@
 
         // Lade Daten (wie gehabt)
         getData($el).then(rawData => {
-            const data = JSON.parse(rawData);
+            const data = Array.isArray(rawData) ? rawData : JSON.parse(rawData);
+
 
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
@@ -346,23 +347,26 @@
     function getContributionColor($el, count, minCount, maxCount) {
         const settings = getSettings($el);
 
+        // Direkte Zuordnung für den Sonderfall count = 0
         if (count === 0) {
             return settings.colors['0']; // Farbe für count = 0
         }
 
-        const range = maxCount - minCount || 1; // Division durch 0 vermeiden
-        let percentage = (count - minCount) / range;
+        const range = maxCount - minCount || 1; // Bereich (Verhindert Division durch 0)
+        let percentage = (count - minCount) / range; // Prozentwert basierend auf Bereich
 
-        // Falls Prozentwert außerhalb erwarteter Grenzen liegt
+        // Prozentwert in den Bereich [0, 1] begrenzen
         percentage = Math.max(0, Math.min(percentage, 1));
 
-        // Passende Farbe finden
+        // Die färbbaren Intervalle aus den Schlüsseln der Farbskala holen
         const colorKeys = Object.keys(settings.colors)
-            .map(Number) // Keys als Zahlen interpretieren
-            .sort((a, b) => a - b) // Sortieren
-            .filter(key => key <= percentage); // Schlüssel ≤ Prozentwert
+            .map(Number) // Keys müssen als Zahlen interpretiert werden
+            .sort((a, b) => a - b); // Sortieren (aufsteigende Reihenfolge)
 
-        return settings.colors[colorKeys.pop()] || settings.colors['1']; // Standard: Höchste Farbe (1)
+        // Passenden Farbwert finden: Prozentzielwert <= einem Farb-Schwellenwert
+        const matchedKey = colorKeys.find(key => percentage <= key) || Math.max(...colorKeys);
+
+        return settings.colors[matchedKey] || settings.colors['1']; // Farbwert oder Standardfarbe
     }
 
     $.fn.heatmap = function (options, params) {
