@@ -50,6 +50,45 @@
  * - If data is provided via URL, query parameters for startDate, endDate, and any custom params are appended.
  */
 (function ($) {
+    const DEFAULTS = {
+        // Neue Default-Werte:
+        startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
+        endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
+        locale: 'en-US',
+        debug: true,
+        classes: 'border border-5 w-100 p-5',
+        data: null,
+        gutter: 2,
+        cellSize: 14,
+        colors: {
+            0: '#ebedf0',   // Kein Wert
+            0.25: '#c6e48b', // Bis 25%
+            0.5: '#7bc96f',  // Bis 50%
+            0.75: '#239a3b', // Bis 75%
+            1: '#196127'     // Bis 100%
+        },
+        titleFormatter(locale, date, count) {
+            return date.toLocaleDateString() + ' - ' + count;
+        },
+        queryParams(p) {
+            return p;
+        }
+    };
+
+
+    function init($el, settings) {
+        const setup = $.extend({}, DEFAULTS, settings || {});
+
+        setup.colors = setup.colors || DEFAULTS.colors;
+        $el.data('heatmapSettings', setup);
+
+        if (setup.debug) {
+            console.log('heatmap:init:', $el.data('heatmapSettings'));
+        }
+
+        drawHeatmap($el);
+    }
+
     function getSettings($el) {
         return $el.data('heatmapSettings');
     }
@@ -158,8 +197,8 @@
         console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
 
         const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-        const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
+        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
+        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
         const firstDayOfWeek = getFirstDayOfWeek(locale);
 
         // Zell- und Abstandseinstellungen
@@ -235,7 +274,7 @@
                 rowGap: gutter,
             });
             dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen oberhalb der Labels
-            Array.from({ length: 7 }, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
+            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
                 const tempDate = new Date(2024, 0, Number(dayIndex));
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
@@ -386,67 +425,33 @@
         if ($(this).length > 1) {
             return $(this).each(function (i, element) {
                 return $(element).heatmap(options, params);
-            })
+            });
         }
+
         const $element = $(this);
+
         const methodCalled = typeof options === 'string';
         const isInitialized = $element.data('heatmapSettings');
-        const DEFAULTS = {
-            // Neue Default-Werte:
-            startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
-            endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
-            locale: 'en-US',
-            debug: true,
-            classes: 'border border-5 w-100 p-5',
-            data: null,
-            gutter: 2,
-            cellSize: 14,
-            colors: {
-                0: '#ebedf0',   // Kein Wert
-                0.25: '#c6e48b', // Bis 25%
-                0.5: '#7bc96f',  // Bis 50%
-                0.75: '#239a3b', // Bis 75%
-                1: '#196127'     // Bis 100%
-            },
-            titleFormatter(locale, date, count) {
-                return date.toLocaleDateString() + ' - ' + count;
-            },
-            queryParams(p) {
-                return p;
-            }
-        };
 
         if (!isInitialized) {
             init($element, options);
-        } else {
-            console.log('heatmap:isInitialized');
         }
 
-        function init($el, settings) {
-            const setup = $.extend({}, DEFAULTS, settings || {});
-
-            setup.colors = setup.colors || DEFAULTS.colors;
-            console.log('Eingestellte Farben:', setup.colors);
-            if (setup.debug) {
-                console.log('heatmap:init', setup);
-            }
-            $el.data('heatmapSettings', setup);
-            console.log($el.data('heatmapSettings'));
-            drawHeatmap($el);
+        // Rückgabewert für Methodenaufruf oder Initialisierung
+        if (!methodCalled) {
+            return $element; // Kein Methodenaufruf, Initialisierung abgeschlossen
         }
 
-        if (methodCalled) {
-            switch (options) {
-                case 'updateOptions': {
-                    const setup = $element.data('heatmapSettings');
-                    if (setup.debug) {
-                        console.log('heatmap:updateOptions', params);
-                    }
-                    $element.data('heatmapSettings', $.extend({}, DEFAULTS, setup, params || {}));
-                    drawHeatmap($element);
+        switch (options) {
+            case 'updateOptions': {
+                const setup = $element.data('heatmapSettings');
+                if (setup.debug) {
+                    console.log('heatmap:updateOptions', params);
                 }
-                    break;
+                $element.data('heatmapSettings', $.extend({}, DEFAULTS, setup, params || {}));
+                drawHeatmap($element);
             }
+                break;
         }
 
         return $element;
