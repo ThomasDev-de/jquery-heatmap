@@ -1,13 +1,24 @@
 {
   "name": "webcito/jquery-heatmap",
-  "version": "1.0.0",
-  "description": "description",
+  "type": "library",
+  "version": "1.0.1",
+  "description": "A jQuery plugin for creating interactive heatmap visualizations.",
+  "keywords": [
+    "jquery",
+    "plugin",
+    "heatmap",
+    "visualization",
+    "interactive"
+  ],
+  "homepage": "https://webcito.de/jquery-heatmap",
   "minimum-stability": "stable",
   "license": "proprietary",
   "authors": [
     {
-      "name": "thomas",
-      "email": "t.kirsch@webcito.de"
+      "name": "Thomas Kirsch",
+      "email": "t.kirsch@webcito.de",
+      "homepage": "https://webcito.de",
+      "role": "Developer"
     }
   ],
   "require": {
@@ -15,5 +26,9 @@
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
+  },
+  "scripts": {
+    "test": "echo 'No tests specified'",
+    "post-install-cmd": "echo 'Thank you for installing webcito/jquery-heatmap!'"
   }
 }

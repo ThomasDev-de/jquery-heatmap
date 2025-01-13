@@ -1,40 +1,53 @@
 /*!
  * Heatmap Plugin
- * Author: Your Name <your.email@example.com>
- * Version: 1.0.0
+ * Author: Your Name <t.kirsch@webcito.de>
+ * Version: 1.0.1
  * License: MIT
  * Description: A jQuery plugin to create and render an interactive heatmap visualization.
- * 
+ *
  * Usage:
  * - Initialize the heatmap on a jQuery element. For example: $('#heatmap').heatmap(settings);
- * 
+ *
  * Settings:
- * - data (Array | String): Either an array of data points or a URL to fetch data.
- * - year (Number): The year to display the heatmap for (default is the current year).
- * - locale (String): The locale identifier for date formatting (default is 'en-US').
- * - firstDayOfWeek (Number): The starting day of the week (0 for Sunday, 1 for Monday, etc.).
- * - cellSize (Number): The size of each day cell in pixels (default is 14px).
- * - gutter (String | Number): Space between cells or weeks (default is '2px').
- * 
+ * - data (Array | String): Either an array of data points or a URL from which data can be fetched.
+ * - startDate (String): The start date for the heatmap in the format 'YYYY-MM-DD' (default: first day of the current year).
+ * - endDate (String): The end date for the heatmap in the format 'YYYY-MM-DD' (default: last day of the current year).
+ * - locale (String): The locale identifier for date formatting and first day of the week calculation (default: 'en-US').
+ * - cellSize (Number): The size of each day cell in pixels (default: 14px).
+ * - gutter (String | Number): Space between cells or weeks (default: '2px').
+ * - colors (Object): A map of contribution levels to colors (e.g. `{ 0: '#ebedf0', 1: '#196127' }`).
+ * - queryParams (Function): A function returning additional query parameters for data fetching.
+ * - debug (Boolean): If true, logs internal events and settings to the console (default: `false`).
+ * - titleFormatter (Function): A function to format tooltips for heatmap cells.
+ *
  * Methods:
  * - getSettings($el): Reads and returns the heatmap settings for a given element.
  * - getData($el): Fetches or provides the data for the heatmap. Can handle local arrays or fetch from URLs.
- * - calculateWeeks(year, firstDayOfWeek): Computes all weeks in a given year based on the first day of the week.
+ * - calculateWeeks(startDate, endDate, firstDayOfWeek): Computes all weeks in the given time period.
  * - drawHeatmap($el): Creates the heatmap and draws it into the provided element.
- * 
+ *
  * Example:
  * $('#heatmap').heatmap({
  *    data: 'https://example.com/data',
- *    year: 2023,
+ *    startDate: '2023-01-01',
+ *    endDate: '2023-12-31',
  *    locale: 'en-US',
- *    firstDayOfWeek: 1,
  *    cellSize: 14,
- *    gutter: '4px'
+ *    gutter: '4px',
+ *    titleFormatter: (locale, date, count) => `${date.toLocaleDateString(locale)} - ${count}`,
+ *    colors: {
+ *        0: '#ebedf0',
+ *        0.25: '#c6e48b',
+ *        0.5: '#7bc96f',
+ *        0.75: '#239a3b',
+ *        1: '#196127'
+ *    }
  * });
- * 
+ *
  * Notes:
- * - The plugin automatically handles week calculations for the provided year.
- * - If data is provided via URL, a GET request will be sent with the specified year as a query parameter.
+ * - The plugin automatically calculates the first day of the week based on the provided locale.
+ * - Week calculations dynamically adapt to custom start and end dates.
+ * - If data is provided via URL, query parameters for startDate, endDate, and any custom params are appended.
  */
 (function ($) {
     function getSettings($el) {
@@ -57,11 +70,21 @@
         }
 
         const query = {
-            year: settings.year || new Date().getFullYear()
+            startDate: settings.startDate || `${new Date().getFullYear()}-01-01`,
+            endDate: settings.endDate || `${new Date().getFullYear()}-12-31`,
+        };
+
+        // Benutzerdefinierte Query-Parameter
+        const customQuery = typeof settings.queryParams === 'function' ? settings.queryParams() : {};
+
+        // Vereinigung der Standard- und benutzerdefinierten Queries
+        const finalQuery = {
+            ...customQuery, // Benutzerdefinierte Werte zuerst
+            ...query        // Start- und Enddatum überschreiben mögliche Konflikte
         };
 
         try {
-            xhr = $.get(settings.data, query);
+            xhr = $.get(settings.data, finalQuery);
             $el.data('xhr', xhr);
 
             // Die Antwort zurückgeben (auch wenn keine besonderen Änderungen gemacht werden)
@@ -75,38 +98,29 @@
         }
     }
 
-    // Berechnung aller Wochen eines Jahres (inkl. angrenzender Wochen aus Vor- und Folgejahr)
-    function calculateWeeks(year, firstDayOfWeek) {
-        // Startdatum: Der 1. Januar des Jahres
-        const startOfYear = new Date(year, 0, 1);
-        const endOfYear = new Date(year, 11, 31);
+    // Berechnung aller Wochen eines Jahres (ink. angrenzender Wochen aus Vor- und Folgejahr)
+    function calculateWeeks(startDate, endDate, firstDayOfWeek) {
+        // Start- und Enddatum in JavaScript-Objekte konvertieren
+        const start = getStartOfWeek(new Date(startDate), firstDayOfWeek);
+        const end = getEndOfWeek(new Date(endDate), firstDayOfWeek);
 
-        // Erster Tag der ersten Woche des Jahres
-        const startOfFirstWeek = getStartOfWeek(startOfYear, firstDayOfWeek);
-
-        // Letzter Tag der letzten Woche des Jahres
-        const endOfLastWeek = getEndOfWeek(endOfYear, firstDayOfWeek);
-
-        // Array für Wochen initialisieren
         const weeks = [];
-        let currentDate = new Date(startOfFirstWeek);
+        let currentDate = new Date(start);
         let currentWeek = [];
 
-        // Schleife über den gesamten Zeitraum (von der ersten bis zur letzten Woche)
-        while (currentDate <= endOfLastWeek) {
-            currentWeek.push(new Date(currentDate)); // Füge den aktuellen Tag zur Woche hinzu
+        // Schleife durch alle Tage zwischen start und end
+        while (currentDate <= end) {
+            currentWeek.push(new Date(currentDate));
 
-            // Wenn die Woche 7 Tage hat, speicher sie ins Wochenarray und starte eine neue Woche
+            // Wenn 7 Tage erreicht, füge die Woche hinzu und starte eine neue
             if (currentWeek.length === 7) {
                 weeks.push(currentWeek);
                 currentWeek = [];
             }
 
-            // Zum nächsten Tag wechseln
-            currentDate.setDate(currentDate.getDate() + 1);
+            currentDate.setDate(currentDate.getDate() + 1); // Zum nächsten Tag
         }
 
-        // Letzte Woche hinzufügen, falls noch Tage übrig sind
         if (currentWeek.length > 0) {
             weeks.push(currentWeek);
         }
@@ -123,52 +137,61 @@
     }
 
     function getStartOfWeek(date, firstDayOfWeek) {
-        const diff = (date.getDay() - firstDayOfWeek + 7) % 7; // Differenz zum Wochenstart
+        const diff = (date.getDay() - firstDayOfWeek + 7) % 7; // Differenz zum Wochenstart berechnen
         const start = new Date(date);
-        start.setDate(date.getDate() - diff); // Verschiebe das Datum auf den Anfang der Woche
-        start.setHours(0, 0, 0, 0); // Uhrzeit auf Beginn des Tages setzen
+        start.setDate(date.getDate() - diff); // Verschiebe das Datum auf den Wochenbeginn
+        start.setHours(0, 0, 0, 0); // Uhrzeit auf Anfang des Tages setzen
         return start;
     }
 
     function drawHeatmap($el) {
         const settings = getSettings($el);
-        const year = settings.year || new Date().getFullYear();
+
+        // `startDate` und `endDate` überprüfen oder Standardwerte setzen
+        const currentYear = new Date().getFullYear();
+        const startDate = settings.startDate || `${currentYear}-01-01`;  // Erster Tag des Jahres
+        const endDate = settings.endDate || `${currentYear}-12-31`;      // Letzter Tag des Jahres
+
+        console.log('Heatmap Zeitraum:', startDate, 'bis', endDate);
 
         // Lokale Optionen
         const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
-        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
+        const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+        const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
         const firstDayOfWeek = getFirstDayOfWeek(locale);
 
-        // Gutter einstellen (Abstand zwischen den Elementen)
-        let gutter = settings.gutter || '2px'; // Standardwert
+        // Gutter einstellen
+        let gutter = settings.gutter || '2px';
         if (typeof gutter === 'number') {
             gutter = `${gutter}px`;
         } else if (!isNaN(parseFloat(gutter)) && !/[a-z%]+$/i.test(gutter)) {
             gutter = `${gutter}px`;
         }
 
-        // Feldgröße einstellen
-        const cellSize = settings.cellSize || 14; // Standardwert: 14px
-        const cellSizePx = `${cellSize}px`; // Umwandlung für CSS
+        // Zellgröße
+        const cellSize = settings.cellSize || 14;
+        const cellSizePx = `${cellSize}px`;
 
-        // Dynamische Wochenberechnung
-        const weeks = calculateWeeks(year, firstDayOfWeek);
+        // Dynamische Wochenberechnung mit neuen Start-/Enddaten
+        const weeks = calculateWeeks(startDate, endDate, firstDayOfWeek);
 
         $el.empty();
+        let result;
 
-        // Lade Daten und ordne sie den Tagen der Heatmap zu
+        // Lade Daten (wie gehabt)
         getData($el).then(data => {
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
+
+            result = data;
 
             // Min und Max Werte ermitteln
             const counts = data.map(entry => entry.count);
             const minCount = Math.min(...counts);
             const maxCount = Math.max(...counts);
 
-            // Daten den Tagen zuordnen
+            // Daten den Tagen zuordnen (bleibt unverändert)
             weeks.forEach(week => {
                 week.forEach((day, index) => {
                     const matchingData = data.find(entry => {
@@ -180,7 +203,6 @@
                         );
                     });
 
-                    // Falls Daten existieren, Eintrag speichern, sonst Standardwert setzen
                     week[index] = {
                         date: day,
                         count: matchingData ? matchingData.count : 0,
@@ -188,92 +210,74 @@
                 });
             });
 
-            // Hauptcontainer für die Heatmap
+            // Heatmap-Rendering (bleibt weitgehend unverändert)
             const heatmapContainer = $('<div class="heatmap-wrapper"></div>');
             heatmapContainer.css({
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'flex-start',
-                gap: gutter, // Abstand zwischen den Wochen
+                gap: gutter,
             });
 
-            // Spalte für Tagesnamen (z. B. Mo, Di, ...)
+            // Spalte für Tagesnamen (wie gehabt)
             const dayLabelColumn = $('<div class="day-labels"></div>');
             dayLabelColumn.css({
                 display: 'grid',
-                gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`, // Platz für Wochentage
+                gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`,
                 marginRight: gutter,
                 textAlign: 'right',
-                rowGap: gutter, // Vertikaler Abstand zwischen Labels
+                rowGap: gutter,
             });
-
-            // Platz für den Monatsnamen über den Labels
-            dayLabelColumn.append('<div></div>');
-
-            // Tageslabels hinzufügen
-            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
-                const tempDate = new Date(2024, 0, dayIndex); // Dummy-Werte für die Tagesnamen
+            dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen über den Labels
+            Array.from({ length: 7 }, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
+                const tempDate = new Date(2024, 0, Number(dayIndex));
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
                 label.css({
                     fontSize: '10px',
                     color: '#666',
-                    lineHeight: cellSizePx, // Gleiche Höhe wie Zellen
+                    lineHeight: cellSizePx,
                 });
                 dayLabelColumn.append(label);
             });
 
             heatmapContainer.append(dayLabelColumn);
 
-            // Haupt-Heatmap-Bereich
+            // Rendern der Wochen und Zellen (wie gehabt)
             const heatmapGrid = $('<div class="heatmap"></div>');
             heatmapGrid.css({
                 display: 'flex',
-                gap: gutter, // Horizontaler Abstand zwischen Wochen
+                gap: gutter,
             });
+            let lastRenderedMonth = -1;
 
-            let lastRenderedMonth = -1; // Für Monatswechselprüfung
-
-            // Wochen rendern
-            weeks.forEach((week) => {
+            weeks.forEach(week => {
                 const weekColumn = $('<div class="heatmap-week"></div>');
                 weekColumn.css({
                     display: 'grid',
-                    gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`, // Platz für Monatsnamen + Tage
-                    rowGap: gutter, // Vertikaler Abstand zwischen Tagen
+                    gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`,
+                    rowGap: gutter,
                 });
-
-                // Monatsbeschriftung
                 const currentMonth = week.find(d => d.date && d.date.getDate() === 1)?.date.getMonth();
 
                 if (currentMonth !== undefined && currentMonth !== lastRenderedMonth) {
                     lastRenderedMonth = currentMonth;
-
                     const monthLabel = $('<div class="month-label"></div>');
                     monthLabel.text(monthFormatter.format(week.find(d => d.date && d.date.getDate() === 1).date));
                     monthLabel.css({
                         textAlign: 'center',
-                        fontSize: `${Math.min(cellSize - 4, 12)}px`, // Dynamische Schriftgröße, max 10px
-                        lineHeight: cellSizePx, // Gleiche Höhe wie Zellen
-                        height: cellSizePx, // Präzise Zellhöhe
-                        width: cellSizePx, // Gleiche Breite wie Zellen
-                        margin: '0', // Kein zusätzlicher Abstand
-                        overflow: 'visible', // Kürzel bleibt auf Zellengröße beschränkt
-                        whiteSpace: 'nowrap', // Kein Textumbruch
-                        padding: '0', // Kein Innenabstand
-                        backgroundColor: 'transparent',
+                        fontSize: `${Math.min(cellSize - 4, 12)}px`,
+                        lineHeight: cellSizePx,
+                        height: cellSizePx,
+                        width: cellSizePx,
                     });
                     weekColumn.append(monthLabel);
                 } else {
-                    // Leerzeile für den Monatsnamen (gleiche Höhe wie Zellen)
                     weekColumn.append('<div style="height: ' + cellSizePx + ';"></div>');
                 }
 
-                // Tageszellen rendern
                 week.forEach(dayEntry => {
                     const cell = $('<div class="heatmap-cell"></div>');
-
-                    // Zellenfarbe basierend auf Daten
                     cell.css({
                         width: cellSizePx,
                         height: cellSizePx,
@@ -283,9 +287,14 @@
                     });
 
                     if (dayEntry.date) {
-                        cell.attr(
+                        cell
+                            .attr('data-bs-toggle', 'tooltip') // bs5
+                            .attr('data-bs-html', true) // bs5
+                            .attr('data-toggle', 'tooltip') // bs4
+                            .attr('data-html', true) // bs4
+                            .attr(
                             'title',
-                            `Datum: ${dayEntry.date.toLocaleDateString(locale)}, Einträge: ${dayEntry.count}`
+                            settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count) || ''
                         );
                     }
 
@@ -301,14 +310,29 @@
         }).catch(err => {
             console.error('Fehler beim Laden der Daten:', err);
             $el.append(`<div class="heatmap-error">${err.message || err}</div>`);
+            result = null;
+        }).finally(() => {
+            $el.trigger('post.heatmap', [$el, result]);
         });
     }
 
 // Unterstützungsfunktion: Ermitteln, ob die Woche mit Montag oder Sonntag startet
     function getFirstDayOfWeek(locale) {
-        // Mapping der Standard-Starttage basierend auf bekannten Regionen
-        const mondayFirstLocales = ['de', 'fr', 'es', 'it']; // Sprachen, bei denen die Woche mit Montag beginnt
-        return mondayFirstLocales.some(l => locale.startsWith(l)) ? 1 : 0; // 1 = Montag, 0 = Sonntag
+        try {
+            // Wochentage gemäß Locale prüfen (0 = Sonntag, 1 = Montag etc.)
+            const formatter = new Intl.DateTimeFormat(locale, { weekday: 'long' });
+            const sampleDate = new Date(2023, 0, 1); // Testdatum (Sonntag, 1. Januar 2023)
+
+            const dayName = formatter.format(sampleDate); // Lokaler Name des Tages
+            console.log('Locale-TagName:', dayName); // Für Debugging sicherstellen
+
+            // Rückgabe des Wertes basierend auf Lokalisierung
+            return dayName.toLowerCase().startsWith('sun') ? 0 : 1; // 0 = Sonntag, 1 = Montag
+
+        } catch (error) {
+            console.error('Fehler bei getFirstDayOfWeek:', error);
+            return 1; // Default: Montag
+        }
     }
 
 
@@ -317,18 +341,22 @@
         const settings = getSettings($el);
 
         if (count === 0) {
-            return settings.colors['0'];
+            return settings.colors['0']; // Farbe für count = 0
         }
 
-        const range = maxCount - minCount || 1; // Vermeidet Division durch 0
-        const percentage = (count - minCount) / range;
+        const range = maxCount - minCount || 1; // Division durch 0 vermeiden
+        let percentage = (count - minCount) / range;
 
+        // Falls Prozentwert außerhalb erwarteter Grenzen liegt
+        percentage = Math.max(0, Math.min(percentage, 1));
+
+        // Passende Farbe finden
         const colorKeys = Object.keys(settings.colors)
-            .map(Number) // Konvertiert Keys zu Zahlen für korrekte Sortierung
-            .sort((a, b) => a - b)
-            .filter(key => key <= percentage);
+            .map(Number) // Keys als Zahlen interpretieren
+            .sort((a, b) => a - b) // Sortieren
+            .filter(key => key <= percentage); // Schlüssel ≤ Prozentwert
 
-        return settings.colors[colorKeys.pop()] || settings.colors['1']; // Gibt Standardfarbe zurück, falls keine passende gefunden wird
+        return settings.colors[colorKeys.pop()] || settings.colors['1']; // Standard: Höchste Farbe (1)
     }
 
     $.fn.heatmap = function (options, params) {
@@ -341,6 +369,10 @@
         const methodCalled = typeof options === 'string';
         const isInitialized = $element.data('heatmapSettings');
         const DEFAULTS = {
+            // Neue Default-Werte:
+            startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
+            endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
+            locale: 'en-US',
             debug: true,
             classes: 'border border-5 w-100 p-5',
             data: null,
@@ -352,6 +384,12 @@
                 0.5: '#7bc96f',
                 0.75: '#239a3b',
                 1: '#196127'
+            },
+            titleFormatter(locale, date, count){
+                return date.toLocaleDateString() + ' - ' + count;
+            },
+            queryParams(p){
+                return p;
             }
         };
 
@@ -364,6 +402,8 @@
         function init($el, settings) {
 
             const setup = $.extend({}, DEFAULTS, settings || {});
+            setup.colors = setup.colors || DEFAULTS.colors;
+            console.log('Eingestellte Farben:', setup.colors);
             if (setup.debug) {
                 console.log('heatmap:init', setup);
             }
@@ -373,13 +413,12 @@
 
         if (methodCalled) {
             switch (options) {
-                case 'setData': {
+                case 'updateOptions': {
                     const setup = $element.data('heatmapSettings');
                     if (setup.debug) {
-                        console.log('heatmap:setData', params);
+                        console.log('heatmap:updateOptions', params);
                     }
-                    setup.data = params;
-                    $element.data('heatmapSettings', setup);
+                    $element.data('heatmapSettings', $.extend({}, DEFAULTS, setup, params || {}));
                     drawHeatmap($element);
                 }
                     break;

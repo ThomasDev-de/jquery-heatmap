@@ -8,6 +8,7 @@
 </head>
 <body>
 <div id="heatmap"></div>
+<div id="heatmap_2"></div>
 <script src="../vendor/components/jquery/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
@@ -15,10 +16,10 @@
 <script src="../dist/jquery.heatmap.js"></script>
 <script>
     (function ($) {
-        function generateRandomDataFor2024() {
+        function generateRandomDataForYear(year = 2025) {
             const data = [];
-            const startDate = new Date("2024-01-01");
-            const endDate = new Date("2024-12-31");
+            const startDate = new Date(year+"-01-01");
+            const endDate = new Date(year+"-12-31");
 
             let currentDate = startDate;
 
@@ -74,17 +75,39 @@
             return data;
         }
 
-        $('#heatmap')
-            .heatmap({
-                year: 2024,
-                gutter: 2,
-                cellSize: 14,
-                locale: 'de',
-                data: generateHeatmapDataForWord()
-            });
+        $(document).ready(function () {
+            $('#heatmap')
+                .heatmap({
+                    year: 2024,
+                    gutter: 2,
+                    cellSize: 14,
+                    locale: 'de',
+                    data: generateHeatmapDataForWord()
+                })
+
+
+            $('#heatmap_2')
+                .heatmap({
+                    year: 2025,
+                    gutter: 2,
+                    cellSize: 14,
+                    locale: 'fr',
+                    data: generateRandomDataForYear(2025),
+                    titleFormatter(locale, date, count) {
+                        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'long'}).format(date);
+                        return `${dayFormatter} ${date.toLocaleDateString()}<br>(${count} Entries)`;
+                    }
+                })
+                .on('post.heatmap', function (e, el, data) {
+                    el.find('[data-bs-toggle="tooltip"]').tooltip();
+                })
+        })
+
         let i = 0;
         // setInterval(() => {
-        //     $('#heatmap').heatmap('setData', i%3 !== 0 ? generateRandomDataFor2024() : generateHeatmapDataForWord());
+        //     $('#heatmap').heatmap('updateOptions', {
+        //         data: i%3 !== 0 ? generateRandomDataFor2024() : generateHeatmapDataForWord(),
+        //     });
         //     i++;
         // }, 1000);
     }(jQuery))

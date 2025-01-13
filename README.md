@@ -1,75 +1,209 @@
 # jQuery Heatmap Plugin
 
-This jQuery plugin generates a visually appealing and interactive heatmap visualization. It allows you to represent data intensity using color variations, providing a clear and concise overview of your dataset.
+This jQuery plugin generates a visually appealing and interactive heatmap visualization.
+It maps data intensity to color variations, providing an intuitive overview of your dataset.
 
-![heatmap](demo/heatmap.png)
+![Heatmap](demo/heatmap.png)
+
+---
 
 ## Features
 
-* **Data-Driven Visualization:** Displays data as a heatmap, where color intensity corresponds to data values.
-* **Dynamic Data Handling:** Supports both static data arrays and dynamic data fetching via AJAX requests. The `year` parameter is sent as a query parameter when fetching data dynamically.
-* **Customizable Appearance:** Offers flexible options to customize cell size, gutter spacing, and the color gradient used for the heatmap.
-* **Locale Support:** Handles different locales correctly, including automatic adjustment of the first day of the week.
-* **Interactive Tooltips:** Provides tooltips on hover over each cell, displaying the date and corresponding data value.
-* **Improved Error Handling:** Robust error handling for data fetching and proper handling of invalid data.
-* **Easy Integration:** Simple and intuitive jQuery plugin syntax for seamless integration into your web projects.
+- **Data-Driven Visualization:** Displays data in a heatmap where the color intensity corresponds to data values.
+- **Dynamic Data Handling:** Supports both static data arrays and dynamic data fetching via AJAX requests.
+  The `startDate` and `endDate` parameters are automatically included in query strings for data fetching.
+- **Custom Query Parameters:** Define additional query parameters dynamically using the `queryParams` function without
+  overriding standard values like `startDate` and `endDate`.
+- **Customizable Design:** Adjust cell sizes, the gap (gutter) between cells, and color gradients.
+- **Localization Support:** Automatically adjusts week start days and date formatting based on locale settings.
+- **Interactive Tooltips:** Displays tooltips with date and associated data values when hovering over cells.
+- **Comprehensive Error Handling:** Handles errors from data fetching or invalid input gracefully.
+- **Easy Integration:** Designed with an intuitive jQuery syntax for effortless integration into web projects.
 
-## Usage
+---
+
+## What's New in Version 1.0.1
+
+1. **Default Date Values:**
+    - The `startDate` and `endDate` are now automatically set to the first and last day of the current year if not
+      explicitly defined.
+
+2. **Query Parameters (`queryParams`):**
+    - A new function allows users to dynamically add query parameters without altering the default ones (`startDate` and
+      `endDate` are never overridden).
+
+3. **Week Calculation:**
+    - Weeks are now calculated dynamically based on custom `startDate` and `endDate`.
+
+4. **Enhanced Color Mapping:**
+    - Define color gradients for different data intensity levels with flexible customization.
+
+5. **Debugging Option:**
+    - A new `debug` option allows you to log settings and queries to the browser console.
+
+6. **Automatic First Day of the Week:**
+    - The plugin determines the first day of the week automatically based on the provided locale.
+
+---
+
+## Installation
 
 1. **Include jQuery and the Heatmap Plugin:**
    ```html
    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-   <script src="jquery.heatmap.js"></script>
+   <script src="dist/jquery.heatmap.js"></script>
    ```
 
-2. **Create a container element:**
+2. **Create a Container Element:**
    ```html
    <div id="heatmap-container"></div>
    ```
 
-3. **Initialize the plugin:**
+3. **Initialize the Plugin:**
    ```javascript
    $('#heatmap-container').heatmap({
-       data: [/* Your data array or URL */],
-       year: 2024, // Example year parameter
-       // ... other options
+       data: [/* Your data array or API URL */],
+       startDate: '2023-01-01',
+       endDate: '2023-12-31',
+       locale: 'en-US',
+       // ...other options
    });
    ```
 
+---
+
 ## Options
 
-* `data`: An array of data objects or a URL for fetching data. Each data object should have a `date` and a `count` property. For URLs, the plugin uses an AJAX GET request with the provided `year` parameter.
-* `year`: The year to display. If `data` is a URL, this value is sent as a query parameter with the AJAX request. Defaults to the current year.
-* `gutter`: The spacing between cells. Can be specified in pixels or other CSS units. Defaults to `2px`.
-* `cellSize`: The size of each heatmap cell. Defaults to `14px`.
-* `colors`: An object defining the color gradient. Keys represent percentages (0-1), and values are the corresponding color codes.
-* `locale`: The locale to use for formatting. Defaults to 'en-US'.
+| Option               | Description                                                                                                  | Default Value                                                              |
+|----------------------|--------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| **`data`**           | Array of data points or a URL from which data will be fetched.                                               | `null`                                                                     |
+| **`startDate`**      | Start date of the heatmap. Defaults to the first day of the current year.                                    | `${currentYear}-01-01`                                                     |
+| **`endDate`**        | End date of the heatmap. Defaults to the last day of the current year.                                       | `${currentYear}-12-31`                                                     |
+| **`queryParams`**    | A function returning additional query parameters. Example: `{ locale: 'en-US' }`.                            | `() => {}`                                                                 |
+| **`gutter`**         | The gap between heatmap cells (e.g., `2px`, `4px`).                                                          | `2px`                                                                      |
+| **`cellSize`**       | The size of each heatmap cell in pixels.                                                                     | `14px`                                                                     |
+| **`colors`**         | An object defining the heatmap's color gradient. Keys are thresholds between `0` and `1`. Values are colors. | See gradient below                                                         |
+| **`locale`**         | Locale for displaying dates and determining the first day of the week.                                       | `en-US`                                                                    |
+| **`debug`**          | If `true`, settings and queries are logged to the console.                                                   | `false`                                                                    |
+| **`titleFormatter`** | A function to format the tooltip content, receiving locale, date, and count as arguments.                    | `(locale, date, count) => date.toLocaleDateString(locale) + " - " + count` |
+
+---
+
+## First Day of the Week (`firstDayOfWeek`)
+
+- The plugin automatically calculates the **first day of the week** using the provided `locale` setting.
+- Example: In the `en-US` locale, the first day of the week is **Sunday (0)**, while in `de-DE` it is **Monday (1)**.
+- This behavior is handled internally and does not require additional configuration.
+
+---
 
 ## Methods
 
-* `setData(data)`: Updates the heatmap with new data. Accepts the same data format as the `data` option. If you need to specify a different year for dynamic data fetching, update the `year` option directly using `.data('heatmapSettings', { year: newYear })` before calling `setData`.
+### Initialize:
 
+```javascript
+$('#heatmap-container').heatmap(options);
+```
+
+### Update Settings:
+
+```javascript
+$('#heatmap-container').heatmap('updateOptions', {
+    startDate: '2024-01-01',
+    endDate: '2024-06-30',
+});
+```
+
+---
 
 ## Example
 
+### Simple Data Initialization:
+
 ```javascript
 $('#heatmap-container').heatmap({
-    data: 'data.json',
-    year: 2024,
-    gutter: 4,
-    cellSize: 16,
+    data: [
+        {date: '2023-01-01', count: 5},
+        {date: '2023-01-02', count: 10},
+        // Add more data points here...
+    ],
+    startDate: '2023-01-01',
+    endDate: '2023-12-31',
+    colors: {
+        0: '#ebedf0',
+        0.25: '#c6e48b',
+        0.5: '#7bc96f',
+        0.75: '#239a3b',
+        1: '#196127'
+    },
+});
+```
+
+### Query Parameters Example:
+
+Include additional query parameters dynamically using the `queryParams` function:
+
+```javascript
+$('#heatmap-container').heatmap({
+    data: '/api/data',
+    queryParams: () => {
+        return {
+            locale: 'en-US',
+            userId: 123, // Add custom parameters
+        };
+    },
+});
+```
+
+---
+
+## Debugging
+
+Enable debugging to log data and settings in the browser console.
+This can be useful for development and error diagnosis:
+
+```javascript
+$('#heatmap-container').heatmap({
+    debug: true, // Enable debugging
+    startDate: '2023-01-01',
+    endDate: '2023-12-31',
+});
+```
+
+---
+
+## Color Gradient
+
+By default, the heatmap's color intensity is mapped to the following scale:
+
+| Threshold (%) | Color     |
+|---------------|-----------|
+| 0             | `#ebedf0` |
+| 25            | `#c6e48b` |
+| 50            | `#7bc96f` |
+| 75            | `#239a3b` |
+| 100           | `#196127` |
+
+You can customize it by passing your own `colors` configuration:
+
+```javascript
+$('#heatmap-container').heatmap({
     colors: {
         0: '#f0f0f0',
         0.5: '#00ff00',
         1: '#0000ff'
     }
 });
-
-// Example updating data and year
-$('#heatmap-container').data('heatmapSettings', { year: 2025 });
-$('#heatmap-container').heatmap('setData', newData); 
 ```
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit bug reports, feature requests, or pull requests.
+Contributions are welcome! Feel free to report bugs, request features, or submit pull requests.
+
+---
+
+## License
+
+This plugin is available under the [MIT Licence](LICENSE).
