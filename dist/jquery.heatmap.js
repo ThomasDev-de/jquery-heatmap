@@ -184,6 +184,7 @@
 
         // Lade Daten (wie gehabt)
         getData($el).then(data => {
+            console.log(data);
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
