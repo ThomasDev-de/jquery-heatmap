@@ -98,14 +98,6 @@
     async function getData($el) {
         const settings = getSettings($el);
 
-        // Anfrage blockieren, wenn sie bereits läuft
-        if ($el.data('xhrRunning')) {
-            if (settings.debug) {
-                console.warn('getData: Anfrage läuft bereits, Abbruch.');
-            }
-            return;
-        }
-
         if (Array.isArray(settings.data)) {
             return Promise.resolve(settings.data); // Wenn Daten ein Array sind, direkt zurückgeben
         }
@@ -128,37 +120,36 @@
             ...query,       // Standardwerte wie Start-/Enddatum
         };
 
-        $el.data('xhrRunning', true);
-
         try {
-            // Umstellung von $.get auf $.ajax
+            // Initialisierung der AJAX-Anfrage
             xhr = $.ajax({
-                url: settings.data, // URL aus den Einstellungen
-                method: 'GET', // Entspricht $.get, da GET standardmäßig verwendet wird
-                data: finalQuery, // Query-Parameter
-                dataType: 'json', // Antwort-Datenformat festlegen
-                beforeSend: function () {
+                url: settings.data,  // URL der Anfrage
+                method: 'GET',       // HTTP-Methode
+                data: finalQuery,    // Query-Parameter
+                dataType: 'json',    // Antwort automatisch als JSON parsen
+                beforeSend: () => {
                     if (settings.debug) {
                         console.log('getData: Anfrage gestartet.', finalQuery);
                     }
                 },
             });
 
-            console.log('getData: xhr', xhr);
+            $el.data('xhr', xhr); // Speichert das aktuelle xhr-Objekt beim Element
 
-            $el.data('xhr', xhr); // Speichere die laufende Anfrage
+            // Warte auf die Antwort
+            await xhr; // Wartet, bis die Anfrage abgeschlossen ist
 
-            const response = await xhr.promise(); // Warte auf die Antwort
-
-            $el.data('xhrRunning', false); // Reset nach Abschluss
-
-            if (settings.debug) {
-                console.log('getData:result', response);
+            if (xhr.status === 200) { // Prüfen, ob der Statuscode erfolgreich ist
+                if (settings.debug) {
+                    console.log('getData: Successful Response:', xhr.responseJSON);
+                }
+                $el.data('xhr', null); // Reset des xhr nach Abschluss
+                return xhr.responseJSON; // JSON-Daten zurückgeben (die Antwort vom Server)
+            } else {
+                throw new Error(`getData: Fehlerhafter Statuscode ${xhr.status}: ${xhr.statusText}`);
             }
-
-            return response;
         } catch (error) {
-            $el.data('xhrRunning', false); // Reset auch bei Fehler
+            $el.data('xhr', null); // Reset auch im Fehlerfall
             if (settings.debug) {
                 console.error('getData:error', error);
             }
