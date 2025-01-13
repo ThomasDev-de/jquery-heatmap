@@ -84,7 +84,11 @@
         };
 
         try {
-            xhr = $.get(settings.data, finalQuery, 'json');
+            xhr = $.get(
+                settings.data,
+                finalQuery,
+                'json'
+            );
             $el.data('xhr', xhr);
 
             // Die Antwort zurückgeben (auch wenn keine besonderen Änderungen gemacht werden)
