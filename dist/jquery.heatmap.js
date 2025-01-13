@@ -160,18 +160,21 @@
     }
 
     // Berechnung aller Wochen eines Jahres (ink. angrenzender Wochen aus Vor- und Folgejahr)
-    function calculateWeeks(startDate, endDate, firstDayOfWeek) {
+    function calculateWeeks($el, startDate, endDate, firstDayOfWeek) {
+        const settings = getSettings($el);
         // Start- und Enddatum in JavaScript-Objekte konvertieren
         const start = getStartOfWeek(new Date(startDate), firstDayOfWeek);
         const end = getEndOfWeek(new Date(endDate), firstDayOfWeek);
 
-        console.log('calculateWeeks:', {
-            startDate,
-            endDate,
-            firstDayOfWeek,
-            start,
-            end,
-        });
+        if (settings.debug) {
+            console.log('calculateWeeks:', {
+                startDate,
+                endDate,
+                firstDayOfWeek,
+                start,
+                end,
+            });
+        }
 
         const weeks = [];
         let currentDate = new Date(start);
@@ -243,7 +246,7 @@
         const cellSizePx = `${cellSize}px`;
 
         // Wochen und Daten vorbereiten
-        const weeks = calculateWeeks(startDate, endDate, firstDayOfWeek);
+        const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
 
         $el.empty();
 
@@ -262,7 +265,6 @@
             // Daten einmalig in eine Map umwandeln (für schnelle Suche)
             const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
 
-            console.log(dataMap);
             // Min- und Max-Werte berechnen
             const counts = data.map(entry => entry.count);
             const minCount = Math.min(...counts);
@@ -289,7 +291,6 @@
 
                     const dayKey = day.toISOString().split('T')[0]; // Format "YYYY-MM-DD"
 
-                    console.log('Schlüssel:', dayKey, 'Wert in Map:', dataMap.get(dayKey));
                     week[index] = {
                         date: day,
                         count: dataMap.get(dayKey) || 0, // Standardwert 0, falls kein Eintrag
@@ -414,7 +415,6 @@
             const sampleDate = new Date(2023, 0, 1); // Testdatum (Sonntag, 1. Januar 2023)
 
             const dayName = formatter.format(sampleDate); // Lokaler Name des Tages
-            console.log('Locale-TagName:', dayName); // Für Debugging sicherstellen
 
             // Rückgabe des Wertes basierend auf Lokalisierung
             return dayName.toLowerCase().startsWith('sun') ? 0 : 1; // 0 = Sonntag, 1 = Montag
@@ -428,11 +428,17 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        console.log('getContributionColor:settings', getSettings($el));
+
         const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
 
+        if(settings.debug) {
+            console.log('getContributionColor:settings', getSettings($el));
+        }
+
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
-            // console.error('Fehlende Farb-Einstellungen in settings:', settings);
+            if(settings.debug) {
+                console.error('Fehlende Farb-Einstellungen in settings:', settings);
+            }
             return '#ff0000'; // Fallback-Farbe z. B. Rot
         }
 
@@ -453,16 +459,19 @@
 
         const matchedKey = colorKeys.find(key => percentage <= key) || Math.max(...colorKeys);
 
-        // Debugprinzipien
-        console.log({
-            count,
-            minCount,
-            maxCount,
-            range,
-            percentage,
-            matchedKey,
-            color: settings.colors[matchedKey],
-        });
+        if (settings.debug){
+            // Debugprinzipien
+            console.log({
+                count,
+                minCount,
+                maxCount,
+                range,
+                percentage,
+                matchedKey,
+                color: settings.colors[matchedKey],
+            });
+        }
+
 
         return settings.colors[matchedKey] || settings.colors['1']; // Fallback: Standardfarbe
     }
