@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 /*!
  * Heatmap Plugin
  * Author: Your Name <t.kirsch@webcito.de>
@@ -281,6 +283,7 @@
             weeks.forEach(week => {
                 week.forEach((day, index) => {
                     const dayKey = day.toISOString().split('T')[0]; // Format "YYYY-MM-DD"
+                    console.log('Schlüssel:', dayKey, 'Wert in Map:', dataMap.get(dayKey));
                     week[index] = {
                         date: day,
                         count: dataMap.get(dayKey) || 0, // Standardwert 0, falls kein Eintrag
