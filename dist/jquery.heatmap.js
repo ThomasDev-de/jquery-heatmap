@@ -260,6 +260,7 @@
             // Daten einmalig in eine Map umwandeln (für schnelle Suche)
             const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
 
+            console.log(dataMap);
             // Min- und Max-Werte berechnen
             const counts = data.map(entry => entry.count);
             const minCount = Math.min(...counts);
@@ -279,10 +280,13 @@
                 return color;
             }
 
+
             // Wochen vorbereiten (Tage mit Zählwerten verbinden)
             weeks.forEach(week => {
                 week.forEach((day, index) => {
+
                     const dayKey = day.toISOString().split('T')[0]; // Format "YYYY-MM-DD"
+
                     console.log('Schlüssel:', dayKey, 'Wert in Map:', dataMap.get(dayKey));
                     week[index] = {
                         date: day,
