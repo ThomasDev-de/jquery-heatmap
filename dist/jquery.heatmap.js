@@ -160,8 +160,8 @@
 
         // Lokale Optionen
         const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
-        const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
+        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
+        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
         const firstDayOfWeek = getFirstDayOfWeek(locale);
 
         // Gutter einstellen
@@ -236,7 +236,7 @@
                 rowGap: gutter,
             });
             dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen über den Labels
-            Array.from({ length: 7 }, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
+            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
                 const tempDate = new Date(2024, 0, Number(dayIndex));
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
@@ -300,9 +300,9 @@
                             .attr('data-toggle', 'tooltip') // bs4
                             .attr('data-html', true) // bs4
                             .attr(
-                            'title',
-                            settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count) || ''
-                        );
+                                'title',
+                                settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count) || ''
+                            );
                     }
 
                     weekColumn.append(cell);
@@ -327,7 +327,7 @@
     function getFirstDayOfWeek(locale) {
         try {
             // Wochentage gemäß Locale prüfen (0 = Sonntag, 1 = Montag etc.)
-            const formatter = new Intl.DateTimeFormat(locale, { weekday: 'long' });
+            const formatter = new Intl.DateTimeFormat(locale, {weekday: 'long'});
             const sampleDate = new Date(2023, 0, 1); // Testdatum (Sonntag, 1. Januar 2023)
 
             const dayName = formatter.format(sampleDate); // Lokaler Name des Tages
@@ -345,7 +345,12 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        const settings = getSettings($el);
+        const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
+
+        if (!settings.colors || Object.keys(settings.colors).length === 0) {
+            console.error('Fehlende Farb-Einstellungen in settings:', settings);
+            return '#ff0000'; // Fallback-Farbe z. B. Rot
+        }
 
         // Direkte Zuordnung für count = 0
         if (count === 0) {
@@ -404,10 +409,10 @@
                 0.75: '#239a3b', // Bis 75%
                 1: '#196127'     // Bis 100%
             },
-            titleFormatter(locale, date, count){
+            titleFormatter(locale, date, count) {
                 return date.toLocaleDateString() + ' - ' + count;
             },
-            queryParams(p){
+            queryParams(p) {
                 return p;
             }
         };
