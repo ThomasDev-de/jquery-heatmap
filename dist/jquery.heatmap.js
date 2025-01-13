@@ -148,7 +148,7 @@
 
             $el.data('xhr', xhr); // Speichere die laufende Anfrage
 
-            const response = await xhr; // Warte auf die Antwort
+            const response = await xhr.promise(); // Warte auf die Antwort
 
             $el.data('xhrRunning', false); // Reset nach Abschluss
 
