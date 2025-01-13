@@ -76,7 +76,7 @@
     };
 
 
-    function init($el, settings) {
+    function init($el, settings, draw) {
         const setup = $.extend({}, DEFAULTS, settings || {});
 
         setup.colors = setup.colors || DEFAULTS.colors;
@@ -86,7 +86,9 @@
             console.log('heatmap:init:', $el.data('heatmapSettings'));
         }
 
-        drawHeatmap($el);
+        if (draw) {
+            drawHeatmap($el);
+        }
     }
 
     function getSettings($el) {
@@ -209,6 +211,7 @@
     }
 
     function drawHeatmap($el) {
+        console.log('heatmap:drawHeatmap');
         const settings = getSettings($el);
 
         // Validierung der Einstellungen
@@ -461,7 +464,7 @@
         const isInitialized = $element.data('heatmapSettings');
 
         if (!isInitialized) {
-            init($element, options);
+            init($element, options, !methodCalled);
         }
 
         // Rückgabewert für Methodenaufruf oder Initialisierung
