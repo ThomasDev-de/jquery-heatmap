@@ -119,19 +119,37 @@
         };
 
         try {
-            // Die folgende Version von $.get korrigiert das Problem
-            const response = await $.get(settings.data, finalQuery, 'json');
+            // Umstellung von $.get auf $.ajax
+            xhr = $.ajax({
+                url: settings.data, // URL aus den Einstellungen
+                method: 'GET', // Entspricht $.get, da GET standardmäßig verwendet wird
+                data: finalQuery, // Query-Parameter
+                dataType: 'json', // Antwort-Datenformat festlegen
+                beforeSend: function () {
+                    if (settings.debug) {
+                        console.log('getData: Anfrage gestartet.', finalQuery);
+                    }
+                },
+            });
+
+            $el.data('xhr', xhr); // Speichere die laufende Anfrage
+
+            const response = await xhr; // Warte auf die Antwort
 
             if (settings.debug) {
                 console.log('getData:result', response);
             }
 
-            // Antwort-Daten in xhr speichern
-            $el.data('xhr', null); // Reset
-            return response; // Erfolgreich empfangene Daten zurückgeben
+            // Nach dem Abschluss: Zurücksetzen
+            $el.data('xhr', null);
+            return response;
         } catch (error) {
-            $el.data('xhr', null); // Reset auch bei Fehlern
-            throw error; // Fehler weiterreichen an den Aufrufer
+            // Fehlerbehandlung
+            $el.data('xhr', null); // Anfrage zurücksetzen
+            if (settings.debug) {
+                console.error('getData:error', error);
+            }
+            throw error; // Fehler weitergeben
         }
     }
 
