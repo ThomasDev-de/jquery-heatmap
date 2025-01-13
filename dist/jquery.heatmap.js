@@ -347,26 +347,35 @@
     function getContributionColor($el, count, minCount, maxCount) {
         const settings = getSettings($el);
 
-        // Direkte Zuordnung für den Sonderfall count = 0
+        // Direkte Zuordnung für count = 0
         if (count === 0) {
             return settings.colors['0']; // Farbe für count = 0
         }
 
-        const range = maxCount - minCount || 1; // Bereich (Verhindert Division durch 0)
-        let percentage = (count - minCount) / range; // Prozentwert basierend auf Bereich
+        const range = maxCount - minCount || 1; // Bereich berechnen
+        let percentage = (count - minCount) / range; // Prozentwert berechnen
 
-        // Prozentwert in den Bereich [0, 1] begrenzen
+        // Begrenze percentage auf [0, 1]
         percentage = Math.max(0, Math.min(percentage, 1));
 
-        // Die färbbaren Intervalle aus den Schlüsseln der Farbskala holen
         const colorKeys = Object.keys(settings.colors)
-            .map(Number) // Keys müssen als Zahlen interpretiert werden
-            .sort((a, b) => a - b); // Sortieren (aufsteigende Reihenfolge)
+            .map(Number) // Keys zu Zahlen
+            .sort((a, b) => a - b); // Aufsteigend sortieren
 
-        // Passenden Farbwert finden: Prozentzielwert <= einem Farb-Schwellenwert
         const matchedKey = colorKeys.find(key => percentage <= key) || Math.max(...colorKeys);
 
-        return settings.colors[matchedKey] || settings.colors['1']; // Farbwert oder Standardfarbe
+        // Debugprinzipien
+        console.log({
+            count,
+            minCount,
+            maxCount,
+            range,
+            percentage,
+            matchedKey,
+            color: settings.colors[matchedKey],
+        });
+
+        return settings.colors[matchedKey] || settings.colors['1']; // Fallback: Standardfarbe
     }
 
     $.fn.heatmap = function (options, params) {
@@ -389,11 +398,11 @@
             gutter: 2,
             cellSize: 14,
             colors: {
-                0: '#ebedf0',
-                0.25: '#c6e48b',
-                0.5: '#7bc96f',
-                0.75: '#239a3b',
-                1: '#196127'
+                0: '#ebedf0',   // Kein Wert
+                0.25: '#c6e48b', // Bis 25%
+                0.5: '#7bc96f',  // Bis 50%
+                0.75: '#239a3b', // Bis 75%
+                1: '#196127'     // Bis 100%
             },
             titleFormatter(locale, date, count){
                 return date.toLocaleDateString() + ' - ' + count;
