@@ -425,14 +425,15 @@
         }
 
         function init($el, settings) {
-
             const setup = $.extend({}, DEFAULTS, settings || {});
+
             setup.colors = setup.colors || DEFAULTS.colors;
             console.log('Eingestellte Farben:', setup.colors);
             if (setup.debug) {
                 console.log('heatmap:init', setup);
             }
             $el.data('heatmapSettings', setup);
+            console.log($el.data('heatmapSettings'));
             drawHeatmap($el);
         }
 
