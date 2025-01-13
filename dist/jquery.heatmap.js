@@ -345,6 +345,7 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
+        console.log(getSettings($el));
         const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
