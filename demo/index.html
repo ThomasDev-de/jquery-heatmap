@@ -92,7 +92,8 @@
                     year: 2025,
                     gutter: 2,
                     cellSize: 14,
-                    locale: 'fr',
+                    locale: 'de',
+                    debug:true,
                     data: generateRandomDataForYear(2025),
                     titleFormatter(locale, date, count) {
                         const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'long'}).format(date);

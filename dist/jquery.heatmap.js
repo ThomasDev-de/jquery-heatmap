@@ -144,6 +144,8 @@
                 },
             });
 
+            console.log('getData: xhr', xhr);
+
             $el.data('xhr', xhr); // Speichere die laufende Anfrage
 
             const response = await xhr; // Warte auf die Antwort
@@ -376,6 +378,8 @@
 
                     if (dayEntry.date) {
                         cell
+                            .attr('data-toggle', 'tooltip') // Bootstrap 4
+                            .attr('data-html', true) // Bootstrap 4
                             .attr('data-bs-toggle', 'tooltip') // Bootstrap 5
                             .attr('data-bs-html', true) // Tooltip mit HTML
                             .attr(
