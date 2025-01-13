@@ -211,7 +211,7 @@
     }
 
     function drawHeatmap($el) {
-        console.log('heatmap:drawHeatmap');
+
         const settings = getSettings($el);
 
         // Validierung der Einstellungen
@@ -220,11 +220,17 @@
             return;
         }
 
+        if (settings.debug) {
+            console.log('heatmap:drawHeatmap');
+        }
+
         const currentYear = new Date().getFullYear();
         const startDate = settings.startDate || `${currentYear}-01-01`;
         const endDate = settings.endDate || `${currentYear}-12-31`;
 
-        console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
+        if (settings.debug) {
+            console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
+        }
 
         const locale = settings.locale || 'en-US';
         const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
@@ -250,6 +256,10 @@
 
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
+            }
+
+            if (settings.debug) {
+                console.log('heatmap:drawHeatmap:data', data);
             }
 
             // Daten einmalig in eine Map umwandeln (für schnelle Suche)
