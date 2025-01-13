@@ -55,7 +55,7 @@
         startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
         endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
         locale: 'en-US',
-        debug: true,
+        debug: false,
         classes: 'border border-5 w-100 p-5',
         data: null,
         gutter: 2,
@@ -96,6 +96,14 @@
     async function getData($el) {
         const settings = getSettings($el);
 
+        // Anfrage blockieren, wenn sie bereits läuft
+        if ($el.data('xhrRunning')) {
+            if (settings.debug) {
+                console.warn('getData: Anfrage läuft bereits, Abbruch.');
+            }
+            return;
+        }
+
         if (Array.isArray(settings.data)) {
             return Promise.resolve(settings.data); // Wenn Daten ein Array sind, direkt zurückgeben
         }
@@ -118,6 +126,8 @@
             ...query,       // Standardwerte wie Start-/Enddatum
         };
 
+        $el.data('xhrRunning', true);
+
         try {
             // Umstellung von $.get auf $.ajax
             xhr = $.ajax({
@@ -136,16 +146,15 @@
 
             const response = await xhr; // Warte auf die Antwort
 
+            $el.data('xhrRunning', false); // Reset nach Abschluss
+
             if (settings.debug) {
                 console.log('getData:result', response);
             }
 
-            // Nach dem Abschluss: Zurücksetzen
-            $el.data('xhr', null);
             return response;
         } catch (error) {
-            // Fehlerbehandlung
-            $el.data('xhr', null); // Anfrage zurücksetzen
+            $el.data('xhrRunning', false); // Reset auch bei Fehler
             if (settings.debug) {
                 console.error('getData:error', error);
             }
