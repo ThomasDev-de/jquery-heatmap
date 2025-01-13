@@ -165,24 +165,26 @@
         const start = getStartOfWeek(new Date(startDate), firstDayOfWeek);
         const end = getEndOfWeek(new Date(endDate), firstDayOfWeek);
 
+        console.log('calculateWeeks:', {
+            startDate,
+            endDate,
+            firstDayOfWeek,
+            start,
+            end,
+        });
+
         const weeks = [];
         let currentDate = new Date(start);
-        let currentWeek = [];
 
-        // Schleife durch alle Tage zwischen start und end
+        // Berechnung der Wochen
         while (currentDate <= end) {
-            currentWeek.push(new Date(currentDate));
+            const currentWeek = [];
 
-            // Wenn 7 Tage erreicht, füge die Woche hinzu und starte eine neue
-            if (currentWeek.length === 7) {
-                weeks.push(currentWeek);
-                currentWeek = [];
+            for (let i = 0; i < 7; i++) {
+                currentWeek.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
             }
 
-            currentDate.setDate(currentDate.getDate() + 1); // Zum nächsten Tag
-        }
-
-        if (currentWeek.length > 0) {
             weeks.push(currentWeek);
         }
 
@@ -313,9 +315,11 @@
                 textAlign: 'right',
                 rowGap: gutter,
             });
+            const heatmapYear = new Date(settings.startDate || new Date().getFullYear()).getFullYear();
+
             dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen oberhalb der Labels
             Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
-                const tempDate = new Date(2024, 0, Number(dayIndex));
+                const tempDate = new Date(heatmapYear, 0, Number(dayIndex));
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
                 label.css({
