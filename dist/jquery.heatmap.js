@@ -57,15 +57,13 @@
     async function getData($el) {
         const settings = getSettings($el);
 
-        // Wenn settings.data ein Array ist, direkt als Promise zurückgeben
         if (Array.isArray(settings.data)) {
-            return Promise.resolve(settings.data);
+            return Promise.resolve(settings.data); // Wenn Daten ein Array sind, direkt zurückgeben
         }
 
-        // Abbrechen des bestehenden XMLHttpRequest, falls vorhanden.
         let xhr = $el.data('xhr') || null;
         if (xhr && xhr.abort) {
-            xhr.abort();
+            xhr.abort(); // Existierende Anfrage abbrechen
             xhr = null;
         }
 
@@ -74,31 +72,27 @@
             endDate: settings.endDate || `${new Date().getFullYear()}-12-31`,
         };
 
-        // Benutzerdefinierte Query-Parameter
+        // Benutzerdefinierte Query-Parameter einfügen
         const customQuery = typeof settings.queryParams === 'function' ? settings.queryParams() : {};
-
-        // Vereinigung der Standard- und benutzerdefinierten Queries
         const finalQuery = {
-            ...customQuery, // Benutzerdefinierte Werte zuerst
-            ...query        // Start- und Enddatum überschreiben mögliche Konflikte
+            ...customQuery, // Benutzerdefinierte Werte
+            ...query,       // Standardwerte wie Start-/Enddatum
         };
 
         try {
-            xhr = $.get(
-                settings.data,
-                finalQuery,
-                'json'
-            );
-            $el.data('xhr', xhr);
+            // Die folgende Version von $.get korrigiert das Problem
+            const response = await $.get(settings.data, finalQuery, 'json');
 
-            // Die Antwort zurückgeben (auch wenn keine besonderen Änderungen gemacht werden)
-            return await xhr;
+            if (settings.debug) {
+                console.log('getData:result', response);
+            }
 
+            // Antwort-Daten in xhr speichern
+            $el.data('xhr', null); // Reset
+            return response; // Erfolgreich empfangene Daten zurückgeben
         } catch (error) {
-            // Optional: Fehler zurückwerfen oder `undefined` zurückgeben
-            throw error;
-        } finally {
-            $el.data('xhr', null); // Reset des xhr-Datenobjekts
+            $el.data('xhr', null); // Reset auch bei Fehlern
+            throw error; // Fehler weiterreichen an den Aufrufer
         }
     }
 
