@@ -81,6 +81,24 @@
     function init($el, settings, draw) {
         const setup = $.extend({}, DEFAULTS, settings || {});
 
+        // Erster Wochentag basierend auf der locale
+        const firstDayOfWeek = getFirstDayOfWeek(setup.locale);
+
+        // Passe das Startdatum an den Start der Woche an (falls nicht bereits korrekt)
+        if (setup.startDate) {
+            const originalStartDate = new Date(setup.startDate);
+            setup.startDate = findStartOfWeek(originalStartDate, firstDayOfWeek);
+
+            if (setup.debug) {
+                console.log('DEBUG: Startdatum angepasst:', {
+                    original: originalStartDate.toISOString(),
+                    adjusted: setup.startDate.toISOString(),
+                    firstDayOfWeek,
+                    locale: setup.locale,
+                });
+            }
+        }
+
         setup.colors = setup.colors || DEFAULTS.colors;
         $el.data('heatmapSettings', setup);
 
@@ -162,33 +180,38 @@
     // Berechnung aller Wochen eines Jahres (ink. angrenzender Wochen aus Vor- und Folgejahr)
     function calculateWeeks($el, startDate, endDate, firstDayOfWeek) {
         const settings = getSettings($el);
-        // Start- und Enddatum in JavaScript-Objekte konvertieren
+
+        // Start- und Ende-Datum verarbeiten
         const start = getStartOfWeek(new Date(startDate), firstDayOfWeek);
         const end = getEndOfWeek(new Date(endDate), firstDayOfWeek);
 
         if (settings.debug) {
-            console.log('calculateWeeks:', {
+            console.log('DEBUG: calculateWeeks:', {
                 startDate,
                 endDate,
                 firstDayOfWeek,
-                start,
-                end,
+                start: start.toISOString(),
+                end: end.toISOString(),
             });
         }
 
         const weeks = [];
         let currentDate = new Date(start);
 
-        // Berechnung der Wochen
+        // Wochenberechnung
         while (currentDate <= end) {
             const currentWeek = [];
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 7; i++) { // Erstelle eine Woche (7 Tage)
                 currentWeek.push(new Date(currentDate));
-                currentDate.setDate(currentDate.getDate() + 1);
+                currentDate.setDate(currentDate.getDate() + 1); // Einen Tag vorwärts
             }
 
             weeks.push(currentWeek);
+        }
+
+        if (settings.debug) {
+            console.log('DEBUG: Berechnete Wochen:', weeks);
         }
 
         return weeks;
@@ -203,10 +226,12 @@
     }
 
     function getStartOfWeek(date, firstDayOfWeek) {
-        const diff = (date.getDay() - firstDayOfWeek + 7) % 7; // Differenz zum Wochenstart berechnen
+        const currentDay = date.getDay(); // Aktueller Tag (0=Sonntag, 6=Samstag)
+        const diff = (currentDay - firstDayOfWeek + 7) % 7; // Unterschied zum ersten Tag berechnen
+
         const start = new Date(date);
-        start.setDate(date.getDate() - diff); // Verschiebe das Datum auf den Wochenbeginn
-        start.setHours(0, 0, 0, 0); // Uhrzeit auf Anfang des Tages setzen
+        start.setDate(date.getDate() - diff); // Zurücksetzen zum Start der Woche
+        start.setHours(0, 0, 0, 0); // Uhrzeit auf Mitternacht
         return start;
     }
 
@@ -407,30 +432,40 @@
         });
     }
 
+    function findStartOfWeek(date, firstDayOfWeek) {
+        const currentDay = date.getDay(); // Wochentag des aktuellen Datums (0=Sonntag, 6=Samstag)
+        const diff = (currentDay - firstDayOfWeek + 7) % 7; // Differenz berechnen: Rücksprung zum Wochentag
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - diff); // Berechne den Start der Woche
+        startOfWeek.setHours(0, 0, 0, 0); // Uhrzeit auf 00:00 setzen
+        return startOfWeek;
+    }
 // Unterstützungsfunktion: Ermitteln, ob die Woche mit Montag oder Sonntag startet
     function getFirstDayOfWeek(locale) {
-        try {
-            // Ein bekanntes Datum, das ein Sonntag ist (z. B. 1. Januar 2023)
-            const sampleSunday = new Date(Date.UTC(2023, 0, 1)); // UTC verhindert Zeitzonen-Probleme
+        const saturdayRegions = [
+            "AE", "AF", "BH", "DJ", "DZ", "EG", "IQ", "IR", "JO", "KW", "LY", "OM", "QA", "SD", "SY"
+        ];
 
-            // Wir erstellen einen Formatter, der für die Locale arbeitet
-            const formatter = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+        const sundayRegions = [
+            "US", "CA", "AU", "PH", "CO", "EG", "CN", "SA", "JP", "BR", "MX", "TH", "IL", "VE", "ZW"
+        ];
 
-            // Holen der Wochentag-Bezeichnung (z. B. "S" für Sonntag oder "M" für Montag)
-            const formattedSunday = formatter.format(sampleSunday);
+        // Trenne `locale` in Sprache und Region
+        const [language, region] = locale.split('-');
 
-            // Prüfen, ob der Sonntag der erste Tag der Woche für diese Locale ist
-            if (formattedSunday === 'S') {
-                return 0; // Sonntag als erster Tag der Woche
-            } else {
-                return 1; // Montag als erster Tag der Woche
+        // Bestimme den ersten Wochentag basierend auf der Region
+        if (region) {
+            if (sundayRegions.includes(region)) {
+                return 0; // Sonntag
             }
-        } catch (error) {
-            console.error('Fehler bei der Bestimmung des ersten Wochentags:', error);
-
-            // Fallback: Wir nehmen an, dass Montag der erste Wochentag ist (häufigste Einstellung)
-            return 1;
+            if (saturdayRegions.includes(region)) {
+                return 6; // Samstag
+            }
+            return 1; // Montag (Standard)
         }
+
+        // Fallback: Standard-Montag, wenn keine Region erkannt wird
+        return 1;
     }
 
 
