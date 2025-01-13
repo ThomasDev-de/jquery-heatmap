@@ -43,7 +43,7 @@
 
             // Raster-Definition für das Wort "Heatmap" - Buchstaben im 7x52 Layout (Tage/Wochen)
             const heatmapWord = [
-                "*  * **** ****                      ", // So
+                "*  * **** ***                       ", // So
                 "*  * *    *  * ***** M   M **** ****", // Mo
                 "**** **** ****   *   MM MM *  * *  *", // Di
                 "*  * *    *  *   *   M M M **** **** ", // Mi
@@ -78,10 +78,11 @@
         $(document).ready(function () {
             $('#heatmap')
                 .heatmap({
-                    year: 2024,
                     gutter: 2,
                     cellSize: 14,
                     locale: 'de',
+                    startDate: '2024-01-01',
+                    endDate: '2024-12-31',
                     data: generateHeatmapDataForWord()
                 })
 

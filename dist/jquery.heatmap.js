@@ -151,73 +151,78 @@
     function drawHeatmap($el) {
         const settings = getSettings($el);
 
-        // `startDate` und `endDate` überprüfen oder Standardwerte setzen
+        // Validierung der Einstellungen
+        if (!settings) {
+            console.error('Keine Heatmap-Einstellungen gefunden, Abbruch');
+            return;
+        }
+
         const currentYear = new Date().getFullYear();
-        const startDate = settings.startDate || `${currentYear}-01-01`;  // Erster Tag des Jahres
-        const endDate = settings.endDate || `${currentYear}-12-31`;      // Letzter Tag des Jahres
+        const startDate = settings.startDate || `${currentYear}-01-01`;
+        const endDate = settings.endDate || `${currentYear}-12-31`;
 
-        console.log('Heatmap Zeitraum:', startDate, 'bis', endDate);
+        console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
 
-        // Lokale Optionen
         const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
-        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
+        const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+        const monthFormatter = new Intl.DateTimeFormat(locale, { month: 'short' });
         const firstDayOfWeek = getFirstDayOfWeek(locale);
 
-        // Gutter einstellen
+        // Zell- und Abstandseinstellungen
         let gutter = settings.gutter || '2px';
         if (typeof gutter === 'number') {
             gutter = `${gutter}px`;
-        } else if (!isNaN(parseFloat(gutter)) && !/[a-z%]+$/i.test(gutter)) {
-            gutter = `${gutter}px`;
         }
-
-        // Zellgröße
         const cellSize = settings.cellSize || 14;
         const cellSizePx = `${cellSize}px`;
 
-        // Dynamische Wochenberechnung mit neuen Start-/Enddaten
+        // Wochen und Daten vorbereiten
         const weeks = calculateWeeks(startDate, endDate, firstDayOfWeek);
 
         $el.empty();
-        let result;
 
-        // Lade Daten (wie gehabt)
+        // Daten abrufen
         getData($el).then(rawData => {
             const data = Array.isArray(rawData) ? rawData : JSON.parse(rawData);
-
 
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
 
-            result = data;
+            // Daten einmalig in eine Map umwandeln (für schnelle Suche)
+            const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
 
-            // Min und Max Werte ermitteln
+            // Min- und Max-Werte berechnen
             const counts = data.map(entry => entry.count);
             const minCount = Math.min(...counts);
             const maxCount = Math.max(...counts);
 
-            // Daten den Tagen zuordnen (bleibt unverändert)
+            // Farben cachen
+            const colorCache = {};
+
+            function getCachedColor(count) {
+                const cacheKey = `${count}-${minCount}-${maxCount}`;
+                if (colorCache[cacheKey]) {
+                    return colorCache[cacheKey];
+                }
+
+                const color = getContributionColor($el, count, minCount, maxCount);
+                colorCache[cacheKey] = color;
+                return color;
+            }
+
+            // Wochen vorbereiten (Tage mit Zählwerten verbinden)
             weeks.forEach(week => {
                 week.forEach((day, index) => {
-                    const matchingData = data.find(entry => {
-                        const entryDate = new Date(entry.date);
-                        return (
-                            entryDate.getFullYear() === day.getFullYear() &&
-                            entryDate.getMonth() === day.getMonth() &&
-                            entryDate.getDate() === day.getDate()
-                        );
-                    });
-
+                    const dayKey = day.toISOString().split('T')[0]; // Format "YYYY-MM-DD"
                     week[index] = {
                         date: day,
-                        count: matchingData ? matchingData.count : 0,
+                        count: dataMap.get(dayKey) || 0, // Standardwert 0, falls kein Eintrag
                     };
                 });
             });
 
-            // Heatmap-Rendering (bleibt weitgehend unverändert)
+            // Heatmap-Container erstellen
             const heatmapContainer = $('<div class="heatmap-wrapper"></div>');
             heatmapContainer.css({
                 display: 'flex',
@@ -226,7 +231,7 @@
                 gap: gutter,
             });
 
-            // Spalte für Tagesnamen (wie gehabt)
+            // Tagesnamen-Spalte (Montag, Dienstag, ...)
             const dayLabelColumn = $('<div class="day-labels"></div>');
             dayLabelColumn.css({
                 display: 'grid',
@@ -235,8 +240,8 @@
                 textAlign: 'right',
                 rowGap: gutter,
             });
-            dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen über den Labels
-            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
+            dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen oberhalb der Labels
+            Array.from({ length: 7 }, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
                 const tempDate = new Date(2024, 0, Number(dayIndex));
                 const label = $('<div class="day-label"></div>');
                 label.text(dayFormatter.format(tempDate));
@@ -250,12 +255,13 @@
 
             heatmapContainer.append(dayLabelColumn);
 
-            // Rendern der Wochen und Zellen (wie gehabt)
+            // Wochen und Zellen rendern
             const heatmapGrid = $('<div class="heatmap"></div>');
             heatmapGrid.css({
                 display: 'flex',
                 gap: gutter,
             });
+
             let lastRenderedMonth = -1;
 
             weeks.forEach(week => {
@@ -265,8 +271,9 @@
                     gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`,
                     rowGap: gutter,
                 });
-                const currentMonth = week.find(d => d.date && d.date.getDate() === 1)?.date.getMonth();
 
+                // Monatsnamen hinzufügen
+                const currentMonth = week.find(d => d.date && d.date.getDate() === 1)?.date.getMonth();
                 if (currentMonth !== undefined && currentMonth !== lastRenderedMonth) {
                     lastRenderedMonth = currentMonth;
                     const monthLabel = $('<div class="month-label"></div>');
@@ -283,22 +290,21 @@
                     weekColumn.append('<div style="height: ' + cellSizePx + ';"></div>');
                 }
 
+                // Tageszellen rendern
                 week.forEach(dayEntry => {
                     const cell = $('<div class="heatmap-cell"></div>');
                     cell.css({
                         width: cellSizePx,
                         height: cellSizePx,
-                        backgroundColor: getContributionColor($el, dayEntry.count, minCount, maxCount),
+                        backgroundColor: getCachedColor(dayEntry.count),
                         borderRadius: '2px',
                         cursor: 'pointer',
                     });
 
                     if (dayEntry.date) {
                         cell
-                            .attr('data-bs-toggle', 'tooltip') // bs5
-                            .attr('data-bs-html', true) // bs5
-                            .attr('data-toggle', 'tooltip') // bs4
-                            .attr('data-html', true) // bs4
+                            .attr('data-bs-toggle', 'tooltip') // Bootstrap 5
+                            .attr('data-bs-html', true) // Tooltip mit HTML
                             .attr(
                                 'title',
                                 settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count) || ''
@@ -313,13 +319,11 @@
 
             heatmapContainer.append(heatmapGrid);
             $el.append(heatmapContainer);
-
         }).catch(err => {
             console.error('Fehler beim Laden der Daten:', err);
             $el.append(`<div class="heatmap-error">${err.message || err}</div>`);
-            result = null;
         }).finally(() => {
-            $el.trigger('post.heatmap', [$el, result]);
+            $el.trigger('post.heatmap', [$el]);
         });
     }
 
