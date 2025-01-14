@@ -89,26 +89,16 @@
     function init($el, settings, draw) {
         const setup = $.extend({}, $.heatmap.DEFAULTS, settings || {});
         const localizedMoment = moment();
-        localizedMoment.locale(setup.locale || $.heatmap.DEFAULTS.locale); // Setze Locale
+        const locale = setup.locale || $.heatmap.DEFAULTS.locale;
+        localizedMoment.locale(locale); // Setze Locale
 
         const firstDayOfWeek = getFirstDayOfWeek(localizedMoment);
-
-        // Adjust start date
-        if (setup.startDate) {
-            const originalStartDate = new Date(setup.startDate);
-            setup.startDate = findStartOfWeek(originalStartDate, firstDayOfWeek);
-
-            if (setup.debug) {
-                console.log('DEBUG: Startdatum angepasst:', {
-                    original: originalStartDate.toISOString(),
-                    adjusted: setup.startDate.toISOString(),
-                    firstDayOfWeek,
-                    locale: setup.locale,
-                    localeData: localizedMoment.localeData()._week, // Zeigt die Woche-Logik an
-                    setup: setup
-                });
-            }
-        }
+        setup.startDate = adjustStartDate(
+            setup.startDate,
+            locale,
+            firstDayOfWeek,
+            setup.debug
+        );
 
         $el.data('heatmapSettings', setup);
 
@@ -504,6 +494,28 @@
         return settings.colors[matchedKey] || settings.colors['1']; // Fallback: Standardfarbe
     }
 
+    function adjustStartDate(startDate, locale, firstDayOfWeek, debug) {
+        if (!startDate) {
+            return null; // Kein Datum vorhanden, nichts anpassen
+        }
+
+        const originalStartDate = new Date(startDate);
+        const adjustedStartDate = findStartOfWeek(originalStartDate, firstDayOfWeek); // Datum berechnen
+        const formattedStartDate = adjustedStartDate.toISOString().split('T')[0]; // Als 'YYYY-MM-DD'
+
+        if (debug) {
+            console.log('DEBUG: Startdatum angepasst:', {
+                original: originalStartDate.toISOString(),
+                adjusted: adjustedStartDate.toISOString(),
+                formatted: formattedStartDate,
+                firstDayOfWeek: firstDayOfWeek,
+                locale: locale
+            });
+        }
+
+        return formattedStartDate; // Formatiertes Datum zurückgeben
+    }
+
     $.fn.heatmap = function (options, params) {
         if ($(this).length > 1) {
             return $(this).each(function (i, element) {
@@ -533,8 +545,18 @@
                 if (setup.debug) {
                     console.log('heatmap:updateOptions', params);
                 }
+
                 const updatedSetup = $.extend({}, $.heatmap.DEFAULTS, setup, params || {});
                 const myMoment = moment().locale(updatedSetup.locale || $.heatmap.DEFAULTS.locale);
+
+                const firstDayOfWeek = getFirstDayOfWeek(myMoment);
+                updatedSetup.startDate = adjustStartDate(
+                    updatedSetup.startDate,
+                    updatedSetup.locale,
+                    firstDayOfWeek,
+                    updatedSetup.debug
+                );
+
                 $element.data('heatmapSettings', updatedSetup);
                 drawHeatmap($element, myMoment);
             }
