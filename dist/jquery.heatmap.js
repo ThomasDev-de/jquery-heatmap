@@ -2,8 +2,8 @@
 
 /*!
  * Heatmap Plugin
- * Author: Your Name <t.kirsch@webcito.de>
- * Version: 1.0.2
+ * Author: Thomas Kirsch <t.kirsch@webcito.de>
+ * Version: 1.0.3
  * License: MIT
  * Description: A jQuery plugin to create and render an interactive heatmap visualization.
  *
@@ -241,7 +241,6 @@
         // Daten abrufen
         getData($el).then(rawData => {
             const data = Array.isArray(rawData) ? rawData : JSON.parse(rawData);
-            const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
@@ -260,26 +259,32 @@
                 startDate = new Date(`${currentYear}-01-01`);
                 endDate = new Date(`${currentYear}-12-31`);
             } else {
-                // Start- und Enddatum aus den Daten berechnen, früheste und späteste Daten ermitteln
-                startDate = data.reduce((earliest, entry) => {
-                    const entryDate = new Date(entry.date);
-                    return entryDate < earliest ? entryDate : earliest;
-                }, new Date(data[0].date));
+                startDate = new Date(data[0].date);
+                endDate = new Date(data[0].date);
 
-                endDate = data.reduce((latest, entry) => {
+                for (const entry of data) {
                     const entryDate = new Date(entry.date);
-                    return entryDate > latest ? entryDate : latest;
-                }, new Date(data[0].date));
+                    if (entryDate < startDate) {
+                        startDate = entryDate;
+                    }
+                    if (entryDate > endDate) {
+                        endDate = entryDate;
+                    }
+                }
             }
 
-            // startDate = findStartOfWeek(startDate, firstDayOfWeek);
-            //
-            // endDate = getEndOfWeek(endDate, firstDayOfWeek);
-
+            endDate.setDate(endDate.getDate() + 1);
 
             // Wochen und Daten vorbereiten
             const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
 
+            // Create a new dataMap using date strings as keys
+            const dataMap = new Map();
+            for (let entry of data) {
+                const entryDate = new Date(entry.date);
+                const dayKey = new Date(Date.UTC(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate())).toISOString().split('T')[0];
+                dataMap.set(dayKey, entry.count);
+            }
             if (settings.debug) {
                 console.log('Berechnete Wochen:', weeks);
             }
@@ -297,7 +302,7 @@
             const maxCount = hasValidCounts ? Math.max(...counts) : fallbackMax;
 
             if (settings.debug) {
-                console.log('DEBUG: Min-/Max-Werte:', { minCount, maxCount, hasValidCounts });
+                console.log('DEBUG: Min-/Max-Werte:', {minCount, maxCount, hasValidCounts});
             }
 
             // Farben cachen
@@ -315,16 +320,13 @@
                 return color;
             }
 
-
             // Wochen vorbereiten (Tage mit Zählwerten verbinden)
             weeks.forEach(week => {
                 week.forEach((day, index) => {
-
-                    const dayKey = day.toISOString().split('T')[0]; // Format "YYYY-MM-DD"
-
+                    const dayKey = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate())).toISOString().split('T')[0]; // toISOString verwendet lokale Zeitzone
                     week[index] = {
                         date: day,
-                        count: dataMap.get(dayKey) || 0, // Standardwert 0, falls kein Eintrag
+                        count: dataMap.get(dayKey) || 0,
                     };
                 });
             });
