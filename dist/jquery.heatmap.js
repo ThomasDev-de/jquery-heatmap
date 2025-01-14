@@ -284,8 +284,7 @@
             // **Min-/Max-Berechnung sicherstellen**
             const counts = data
                 .map(entry => entry.count)
-                .filter(count => typeof count === 'number' && count >= 0); // Nur gültige Zahlen zulassen
-
+                .filter(count => typeof count === 'number' && count >= 0); // Nur gültige Zahlenwerte
             if (counts.length === 0) {
                 throw new Error('Keine gültigen Werte für die Min-/Max-Berechnung gefunden.');
             }
@@ -464,57 +463,47 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-
-        const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
+        const settings = getSettings($el) || { colors: generateDynamicColors() };
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
             if (settings.debug) {
-                console.error('Fehlende Farb-Einstellungen in settings:', settings);
+                console.error('Farbskala fehlt in settings:', settings);
             }
-            return '#ff0000'; // Fallback-Farbe z. B. Rot
+            return '#ff0000'; // Standardfarbe (Fallback)
         }
 
         // Direkte Zuordnung für count = 0
         if (count === 0) {
-            return settings.colors['0']; // Farbe für count = 0
+            return settings.colors['0']; // Farbe für keine Aktivität
         }
 
-        const range = maxCount - minCount || 1; // Bereich berechnen
-        let percentage = (count - minCount) / range; // Prozentwert berechnen
+        // **Logarithmische Skalierung falls Werte groß sind**
+        const rangeLog = Math.log10(maxCount + 1) - Math.log10(minCount + 1);
+        const percentage = (Math.log10(count + 1) - Math.log10(minCount + 1)) / rangeLog;
 
-        // Begrenze percentage auf [0, 1]
-        percentage = Math.max(0, Math.min(percentage, 1));
+        // Begrenzen auf [0, 1]
+        const scaledPercentage = Math.max(0, Math.min(percentage, 1));
 
-        if (settings.debug) {
-            console.log('DEBUG: Farbzuordnung im AJAX-Fall:', {
-                count,
-                minCount,
-                maxCount,
-                range,
-                percentage,
-            });
-        }
-
+        // **Farbschlüssel matchen**
         const colorKeys = Object.keys(settings.colors)
-            .map(Number) // Keys zu Zahlen
-            .sort((a, b) => a - b); // Aufsteigend sortieren
+            .map(Number) // Keys zu Zahlen umwandeln
+            .sort((a, b) => a - b); // Aufsteigend sortiert
 
-        const matchedKey = colorKeys.find(key => percentage <= key) || Math.max(...colorKeys);
+        const matchedKey = colorKeys.find(key => scaledPercentage <= key) || Math.max(...colorKeys);
 
         if (settings.debug) {
-            // Debugprinzipien
-            console.log({
+            console.log('DEBUG: Farbzuordnungskontrolle:', {
                 count,
                 minCount,
                 maxCount,
-                range,
-                percentage,
+                rangeLog,
+                scaledPercentage,
                 matchedKey,
                 color: settings.colors[matchedKey],
             });
         }
 
-        return settings.colors[matchedKey] || settings.colors['1']; // Fallback: Standardfarbe
+        return settings.colors[matchedKey] || settings.colors['1']; // Standardfarbe (Fallback)
     }
 
     function adjustStartDate(startDate, locale, firstDayOfWeek, debug) {
