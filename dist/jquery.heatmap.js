@@ -71,7 +71,6 @@
             cellSize: 14,
             colors: {
                 0: '#ebedf0',
-                0.1: '#d7ff9f',
                 0.25: '#c6e48b',
                 0.5: '#7bc96f',
                 0.75: '#239a3b',
@@ -467,40 +466,39 @@
         const settings = getSettings($el);
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
-            if (settings.debug) {
-                console.error('Farbskala fehlt in settings:', settings);
-            }
-            return '#ff0000'; // Standardfarbe (Fallback)
+            settings.colors = $.heatmap.DEFAULTS.colors;
         }
 
-        // **Sonderfall für count = 0**
+        // Sonderfall für count = 0
         if (count === 0) {
-            return settings.colors['0'] || '#ebedf0'; // Basale Farbe (neutral für 0)
+            return settings.colors['0'];
         }
 
         // Logarithmische Skalierung für alle nicht-null-Werte
         const rangeLog = Math.log10(maxCount + 1) - Math.log10(minCount + 1);
         const percentage = (Math.log10(count + 1) - Math.log10(minCount + 1)) / rangeLog;
 
-        // Begrenzen auf [0, 1]
+        // Begrenzen auf Bereich [0, 1]
         const scaledPercentage = Math.max(0, Math.min(percentage, 1));
 
-        // **Farbschlüssel matchen**
+        // Farbschlüssel erhalten und sortieren
         const colorKeys = Object.keys(settings.colors)
             .map(Number) // Keys zu Zahlen umwandeln
-            .sort((a, b) => a - b); // Aufsteigend sortiert
+            .sort((a, b) => a - b); // Keys aufsteigend sortiert
 
+        // Standard-Logik: Zu einem passenden Farbschlüssel mappen
         let matchedKey = colorKeys.find(key => scaledPercentage <= key) || Math.max(...colorKeys);
 
-        // Minimal sichtbare Farbe für den kleinsten sichtbaren Wert (z.B. count = 1)
-        if (count === minCount && settings.colors['0.1']) {
-            matchedKey = 0.1; // Optional: definiere Key `0.1` für den kleinsten sichtbaren Wert
+        // Für den minimalen Wert auf die erste sichtbare Stufe fallen
+        if (count !== 0 && count === minCount) {
+            matchedKey = colorKeys.find(key => key > 0) || Math.max(...colorKeys);
         }
 
-        let color = settings.colors[matchedKey] || settings.colors['1']; // Standardfarbe (Fallback)
+        // Farbe auswählen (mit Fallback auf `1`)
+        let color = settings.colors[matchedKey] || settings.colors['1'];
 
         if (settings.debug) {
-            console.log('DEBUG: Farbzuordnungskontrolle:', {
+            console.log('DEBUG: Farbzuordnung:', {
                 count,
                 minCount,
                 maxCount,
