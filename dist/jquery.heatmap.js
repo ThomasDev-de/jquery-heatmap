@@ -281,20 +281,25 @@
             const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
 
             // **Min- und Max-Werte berechnen**
-            // **Min-/Max-Berechnung sicherstellen**
+// **Min-/Max-Berechnung sicherstellen**
             const counts = data
                 .map(entry => entry.count)
                 .filter(count => typeof count === 'number' && count >= 0); // Nur gültige Zahlenwerte
-            if (counts.length === 0) {
-                throw new Error('Keine gültigen Werte für die Min-/Max-Berechnung gefunden.');
-            }
 
-            const minCount = Math.min(...counts);
-            const maxCount = Math.max(...counts);
+// Standardwerte für Fallback
+            const fallbackMin = 0;  // Fallback für minCount
+            const fallbackMax = 1;  // Fallback für maxCount (z. B. 1 für eine minimale Skalierung)
 
-            // Debugging für Min-/Max-Werte
+// Überprüfen, ob gültige Werte vorhanden sind
+            const hasValidCounts = counts.length > 0;
+
+// Min-/Max-Werte berechnen oder Fallback verwenden
+            const minCount = hasValidCounts ? Math.min(...counts) : fallbackMin;
+            const maxCount = hasValidCounts ? Math.max(...counts) : fallbackMax;
+
+// Debugging für Min-/Max-Werte
             if (settings.debug) {
-                console.log('DEBUG: Min-/Max-Werte:', {minCount, maxCount});
+                console.log('DEBUG: Min-/Max-Werte:', { minCount, maxCount, hasValidCounts });
             }
 
             // Farben cachen
