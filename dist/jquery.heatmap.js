@@ -135,7 +135,7 @@
         };
 
         // Benutzerdefinierte Query-Parameter einfügen
-        const customQuery = typeof settings.queryParams === 'function' ? settings.queryParams() : {};
+        const customQuery = typeof settings.queryParams === 'function' ? settings.queryParams(query) : {};
         const finalQuery = {
             ...customQuery, // Benutzerdefinierte Werte
             ...query,       // Standardwerte wie Start-/Enddatum
