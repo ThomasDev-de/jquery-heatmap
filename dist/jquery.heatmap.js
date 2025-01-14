@@ -273,7 +273,7 @@
                 }
             }
 
-            endDate.setDate(endDate.getDate() + 1);
+            // endDate.setDate(endDate.getDate() + 1);
 
             // Wochen und Daten vorbereiten
             const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
