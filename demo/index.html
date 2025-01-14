@@ -9,10 +9,12 @@
 <body>
 <div id="heatmap"></div>
 <div id="heatmap_2"></div>
+<div id="heatmap_3"></div>
 <script src="../vendor/components/jquery/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
+<script src="../vendor/moment/moment/min/moment-with-locales.min.js"></script>
 <script src="../dist/jquery.heatmap.js"></script>
 <script>
     (function ($) {
@@ -20,28 +22,21 @@
             const data = [];
             const startDate = new Date(year+"-01-01");
             const endDate = new Date(year+"-12-31");
-
             let currentDate = startDate;
-
             while (currentDate <= endDate) {
                 data.push({
                     date: currentDate.toISOString().split("T")[0], // Nur das Datum (YYYY-MM-DD)
                     count: Math.floor(Math.random() * 10) // Zufällige Zahl zwischen 0 und 100
                 });
-
-                // Einen Tag hinzufügen
                 currentDate.setDate(currentDate.getDate() + 1);
             }
-
             return data;
         }
 
         function generateHeatmapDataForWord() {
             const data = [];
             const year = 2024;
-            const lowValue = 0;   // Hintergrundwerte
-
-            // Raster-Definition für das Wort "Heatmap" - Buchstaben im 7x52 Layout (Tage/Wochen)
+            const lowValue = 0;
             const heatmapWord = [
                 "*  * **** ***                       ", // So
                 "*  * *    *  * ***** M   M **** ****", // Mo
@@ -51,39 +46,60 @@
                 "             *   *   M   M *  * *    ", // Fr
             ];
 
-            // Startdatum setzen
             let currentDate = new Date(`${year}-01-01`);
-
-            let week = 0; // Kalenderwoche
+            let week = 0;
             while (week < heatmapWord[0].length && currentDate.getFullYear() === year) {
                 for (let day = 0; day < 7 && currentDate.getFullYear() === year; day++) {
-                    // Prüfen, ob an der aktuellen Position ein Buchstaben-Pixel ist
                     const char = heatmapWord[day]?.[week] || " ";
                     const count = char.trim() !== "" ? (Math.floor(Math.random() * 21) + 20) : lowValue; // Hoher Wert für Nicht-Leerzeichen
-
                     data.push({
                         date: currentDate.toISOString().split("T")[0],
                         count: count,
                     });
-
-                    // Zum nächsten Tag weiterschalten
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
                 week++;
             }
-
             return data;
         }
 
         $(document).ready(function () {
+            $.heatmap.setDefaults({
+                debug:true,
+                cellSize: 16,
+                titleFormatter(locale, date, count, $el) {
+                    const id = $el.attr('id') || '';
+                    // console.log('Title Formatter Debug ('+id+'):', {locale, date, count});
+
+                    const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'long'}).format(date);
+                    return `${id} ${dayFormatter} ${date.toLocaleDateString()}<br>(${count} Entries)`;
+                }
+            });
+
             $('#heatmap')
                 .heatmap({
-                    gutter: 2,
-                    cellSize: 14,
+                    debug:true,
+                    gutter: 0,
+                    cellSize: 24,
                     locale: 'de',
                     startDate: '2024-01-01',
-                    endDate: '2024-12-31',
+                    endDate: '2024-09-08',
                     data: generateHeatmapDataForWord()
+                })
+
+            $('#heatmap_3')
+                .heatmap({
+                    locale: 'fr',
+                    startDate: '2024-01-01',
+                    endDate: '2024-12-31',
+                    data: generateRandomDataForYear(2024),
+                    colors: {
+                        0: '#ebedf0',   // Kein Wert
+                        0.25: '#cce4f6', // Bis 25%
+                        0.5: '#7fb3d5',  // Bis 50%
+                        0.75: '#3f82c5', // Bis 75%
+                        1: '#0b4f8a'     // Bis 100%
+                    }
                 })
 
 
@@ -91,25 +107,22 @@
                 .heatmap({
                     startDate: '2025-01-01',
                     endDate: '2025-12-31',
-                    gutter: 2,
-                    cellSize: 14,
                     locale: 'en',
-                    debug:true,
-                    data: generateRandomDataForYear(2025),
-                    titleFormatter(locale, date, count) {
-                        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'long'}).format(date);
-                        return `${dayFormatter} ${date.toLocaleDateString()}<br>(${count} Entries)`;
-                    }
+                    data: generateRandomDataForYear(2025)
                 })
-                .on('post.heatmap', function (e, el, data) {
-                    el.find('[data-bs-toggle="tooltip"]').tooltip();
-                })
+
+            $('[id^="heatmap"]').on('post.heatmap', function (e, element, data) {
+                element.find('[data-bs-toggle="tooltip"]').tooltip();
+                console.log('Heatmap rendering completed!');
+                console.log('Rendered data:', data);
+            });
+
         })
 
         let i = 0;
         // setInterval(() => {
         //     $('#heatmap').heatmap('updateOptions', {
-        //         data: i%3 !== 0 ? generateRandomDataFor2024() : generateHeatmapDataForWord(),
+        //         data:  generateHeatmapDataForWord()
         //     });
         //     i++;
         // }, 1000);

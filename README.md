@@ -45,13 +45,20 @@ It maps data intensity to color variations, providing an intuitive overview of y
     - The plugin determines the first day of the week automatically based on the provided locale.
 
 ---
+## Requirements
 
+- **jQuery:** Requires jQuery 3.6 or higher.
+- **Moment:** Requires moment-with-locales.min.js ^2. Moment.js is required to reliably determine the first day of the week (e.g., Monday or Sunday).
+- **Browser Compatibility:** Works on modern browsers with JavaScript enabled.
+- **Dependencies:** No additional external libraries required.
+---
 ## Installation
 
 1. **Include jQuery and the Heatmap Plugin:**
    ```html
-   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-   <script src="dist/jquery.heatmap.js"></script>
+   <script src="/vendor/components/jquery/jquery.min.js"></script>
+   <script src="/vendor/moment/moment/min/moment-with-locales.min.js"></script>
+   <script src="dist/jquery.heatmap.min.js"></script>
    ```
 
 2. **Create a Container Element:**
@@ -89,14 +96,6 @@ It maps data intensity to color variations, providing an intuitive overview of y
 
 ---
 
-## First Day of the Week (`firstDayOfWeek`)
-
-- The plugin automatically calculates the **first day of the week** using the provided `locale` setting.
-- Example: In the `en-US` locale, the first day of the week is **Sunday (0)**, while in `de-DE` it is **Monday (1)**.
-- This behavior is handled internally and does not require additional configuration.
-
----
-
 ## Methods
 
 ### Initialize:
@@ -113,6 +112,31 @@ $('#heatmap-container').heatmap('updateOptions', {
     endDate: '2024-06-30',
 });
 ```
+
+---
+
+### Events
+
+This plugin supports specific events, allowing developers to respond to various states and actions.
+
+- **`init.heatmap`**  
+  Triggered after the heatmap has been successfully initialized.  
+  Example:
+  ```javascript
+  $('#heatmap').on('init.heatmap', function (event, element) {
+      console.log('Heatmap has been initialized!', element);
+  });
+  ```
+
+- **`post.heatmap`**  
+  Triggered after the heatmap has been fully rendered, including all data and visual elements. The event includes the element and the rendered data.  
+  Example:
+  ```javascript
+  $('#heatmap').on('post.heatmap', function (event, element, data) {
+      console.log('Heatmap rendering completed!', element);
+      console.log('Rendered data:', data);
+  });
+  ```
 
 ---
 

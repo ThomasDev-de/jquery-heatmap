@@ -1,7 +1,7 @@
 {
   "name": "webcito/jquery-heatmap",
   "type": "library",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A jQuery plugin for creating interactive heatmap visualizations.",
   "keywords": [
     "jquery",
@@ -22,7 +22,14 @@
     }
   ],
   "require": {
-    "components/jquery": "^3"
+    "components/jquery": "^3",
+    "moment/moment": "^2"
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true,
+      "oomphinc/composer-installers-extender": true
+    }
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"

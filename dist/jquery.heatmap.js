@@ -3,7 +3,7 @@
 /*!
  * Heatmap Plugin
  * Author: Your Name <t.kirsch@webcito.de>
- * Version: 1.0.1
+ * Version: 1.0.2
  * License: MIT
  * Description: A jQuery plugin to create and render an interactive heatmap visualization.
  *
@@ -52,39 +52,48 @@
  * - If data is provided via URL, query parameters for startDate, endDate, and any custom params are appended.
  */
 (function ($) {
-    const DEFAULTS = {
-        // Neue Default-Werte:
-        startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
-        endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
-        locale: 'en-US',
-        debug: false,
-        classes: 'border border-5 w-100 p-5',
-        data: null,
-        gutter: 2,
-        cellSize: 14,
-        colors: {
-            0: '#ebedf0',   // Kein Wert
-            0.25: '#c6e48b', // Bis 25%
-            0.5: '#7bc96f',  // Bis 50%
-            0.75: '#239a3b', // Bis 75%
-            1: '#196127'     // Bis 100%
+
+    $.heatmap = {
+        setDefaults: function (options) {
+            this.DEFAULTS = $.extend({}, this.DEFAULTS, options || {});
         },
-        titleFormatter(locale, date, count) {
-            return date.toLocaleDateString() + ' - ' + count;
+        getDefaults: function () {
+            return this.DEFAULTS;
         },
-        queryParams(p) {
-            return p;
+        DEFAULTS: {
+            startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
+            endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
+            locale: 'en-US',
+            debug: false,
+            classes: 'border border-5 w-100 p-5',
+            data: null,
+            gutter: 2,
+            cellSize: 14,
+            colors: {
+                0: '#ebedf0',
+                0.25: '#c6e48b',
+                0.5: '#7bc96f',
+                0.75: '#239a3b',
+                1: '#196127'
+            },
+            titleFormatter(locale, date, count, $el) {
+                const id = $el.attr('id') || '';
+                return id + ' ' + date.toLocaleDateString() + ' - ' + count;
+            },
+            queryParams(p) {
+                return p;
+            }
         }
     };
 
-
     function init($el, settings, draw) {
-        const setup = $.extend({}, DEFAULTS, settings || {});
+        const setup = $.extend({}, $.heatmap.DEFAULTS, settings || {});
+        const localizedMoment = moment();
+        localizedMoment.locale(setup.locale || $.heatmap.DEFAULTS.locale); // Setze Locale
 
-        // Erster Wochentag basierend auf der locale
-        const firstDayOfWeek = getFirstDayOfWeek(setup.locale);
+        const firstDayOfWeek = getFirstDayOfWeek(localizedMoment);
 
-        // Passe das Startdatum an den Start der Woche an (falls nicht bereits korrekt)
+        // Adjust start date
         if (setup.startDate) {
             const originalStartDate = new Date(setup.startDate);
             setup.startDate = findStartOfWeek(originalStartDate, firstDayOfWeek);
@@ -95,11 +104,12 @@
                     adjusted: setup.startDate.toISOString(),
                     firstDayOfWeek,
                     locale: setup.locale,
+                    localeData: localizedMoment.localeData()._week, // Zeigt die Woche-Logik an
+                    setup: setup
                 });
             }
         }
 
-        setup.colors = setup.colors || DEFAULTS.colors;
         $el.data('heatmapSettings', setup);
 
         if (setup.debug) {
@@ -107,7 +117,8 @@
         }
 
         if (draw) {
-            drawHeatmap($el);
+            drawHeatmap($el, localizedMoment); // Lokale Moment-Instanz übergeben
+            $el.trigger('init.heatmap', [$el]);
         }
     }
 
@@ -146,12 +157,7 @@
                 url: settings.data,  // URL der Anfrage
                 method: 'GET',       // HTTP-Methode
                 data: finalQuery,    // Query-Parameter
-                dataType: 'json',    // Antwort automatisch als JSON parsen
-                beforeSend: () => {
-                    if (settings.debug) {
-                        console.log('getData: Anfrage gestartet.', finalQuery);
-                    }
-                },
+                dataType: 'json'    // Antwort automatisch als JSON parsen
             });
 
             $el.data('xhr', xhr); // Speichert das aktuelle xhr-Objekt beim Element
@@ -235,10 +241,8 @@
         return start;
     }
 
-    function drawHeatmap($el) {
-
+    function drawHeatmap($el, myMoment) {
         const settings = getSettings($el);
-
         // Validierung der Einstellungen
         if (!settings) {
             console.error('Keine Heatmap-Einstellungen gefunden, Abbruch');
@@ -256,14 +260,11 @@
         if (settings.debug) {
             console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
         }
-
-        const locale = settings.locale || 'en-US';
-        const dayFormatter = new Intl.DateTimeFormat(locale, {weekday: 'short'});
-        const monthFormatter = new Intl.DateTimeFormat(locale, {month: 'short'});
-        const firstDayOfWeek = getFirstDayOfWeek(locale);
+        const monthFormatter = new Intl.DateTimeFormat(myMoment.locale(), {month: 'short'});
+        const firstDayOfWeek = getFirstDayOfWeek(myMoment);
 
         // Zell- und Abstandseinstellungen
-        let gutter = settings.gutter || '2px';
+        let gutter = (settings.gutter !== undefined ? settings.gutter : '2px');
         if (typeof gutter === 'number') {
             gutter = `${gutter}px`;
         }
@@ -332,8 +333,15 @@
                 gap: gutter,
             });
 
+            const placeholder = $('<div class="month-placeholder"></div>'); // Platzhalter für Monatsnamen
+            placeholder.css({
+                height: cellSizePx, // Höhe der Monatsnamen-Zeile
+                width: '100%',
+            });
+
             // Tagesnamen-Spalte (Montag, Dienstag, ...)
             const dayLabelColumn = $('<div class="day-labels"></div>');
+            dayLabelColumn.append(placeholder); // Platzhalter hinzufügen
             dayLabelColumn.css({
                 display: 'grid',
                 gridTemplateRows: `${cellSizePx} repeat(7, ${cellSizePx})`,
@@ -341,20 +349,22 @@
                 textAlign: 'right',
                 rowGap: gutter,
             });
-            const heatmapYear = new Date(settings.startDate || new Date().getFullYear()).getFullYear();
 
-            dayLabelColumn.append('<div></div>'); // Platz für Monatsnamen oberhalb der Labels
-            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7).forEach(dayIndex => {
-                const tempDate = new Date(heatmapYear, 0, Number(dayIndex));
-                const label = $('<div class="day-label"></div>');
-                label.text(dayFormatter.format(tempDate));
-                label.css({
-                    fontSize: '10px',
-                    color: '#666',
-                    lineHeight: cellSizePx,
+            const heatmapYear = new Date(settings.startDate || new Date().getFullYear()).getFullYear();
+            const firstDayOfWeek = getFirstDayOfWeek(myMoment); // Gibt 0 (So) oder 1 (Mo) je nach Locale zurück.
+            Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7)
+                .forEach(dayOffset => {
+                    const tempDate = myMoment.clone().isoWeekday(dayOffset === 0 ? 7 : dayOffset); // 1=Mo, 7=So
+                    const label = $('<div class="day-label"></div>');
+                    label.text(tempDate.format('ddd')); // Lokalisierter Tagesname
+                    label.css({
+                        fontSize: `${cellSize * 0.7}px`,
+                        color: '#666',
+                        textAlign: 'center',
+                        lineHeight: cellSizePx,
+                    });
+                    dayLabelColumn.append(label);
                 });
-                dayLabelColumn.append(label);
-            });
 
             heatmapContainer.append(dayLabelColumn);
 
@@ -382,8 +392,8 @@
                     const monthLabel = $('<div class="month-label"></div>');
                     monthLabel.text(monthFormatter.format(week.find(d => d.date && d.date.getDate() === 1).date));
                     monthLabel.css({
-                        textAlign: 'center',
-                        fontSize: `${Math.min(cellSize - 4, 12)}px`,
+                        textAlign: 'left',
+                        fontSize: `${cellSize * 0.7}px`,
                         lineHeight: cellSizePx,
                         height: cellSizePx,
                         width: cellSizePx,
@@ -400,7 +410,7 @@
                         width: cellSizePx,
                         height: cellSizePx,
                         backgroundColor: getCachedColor(dayEntry.count),
-                        borderRadius: '2px',
+                        borderRadius: parseInt(gutter) > 2 ? '2px' : gutter,
                         cursor: 'pointer',
                     });
 
@@ -412,7 +422,7 @@
                             .attr('data-bs-html', true) // Tooltip mit HTML
                             .attr(
                                 'title',
-                                settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count) || ''
+                                settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count, $el) || ''
                             );
                     }
 
@@ -424,11 +434,12 @@
 
             heatmapContainer.append(heatmapGrid);
             $el.append(heatmapContainer);
+            $el.trigger('post.heatmap', [$el, data]);
         }).catch(err => {
             console.error('Fehler beim Laden der Daten:', err);
             $el.append(`<div class="heatmap-error">${err.message || err}</div>`);
         }).finally(() => {
-            $el.trigger('post.heatmap', [$el]);
+
         });
     }
 
@@ -440,32 +451,11 @@
         startOfWeek.setHours(0, 0, 0, 0); // Uhrzeit auf 00:00 setzen
         return startOfWeek;
     }
+
 // Unterstützungsfunktion: Ermitteln, ob die Woche mit Montag oder Sonntag startet
-    function getFirstDayOfWeek(locale) {
-        const saturdayRegions = [
-            "AE", "AF", "BH", "DJ", "DZ", "EG", "IQ", "IR", "JO", "KW", "LY", "OM", "QA", "SD", "SY"
-        ];
-
-        const sundayRegions = [
-            "US", "CA", "AU", "PH", "CO", "EG", "CN", "SA", "JP", "BR", "MX", "TH", "IL", "VE", "ZW"
-        ];
-
-        // Trenne `locale` in Sprache und Region
-        const [language, region] = locale.split('-');
-
-        // Bestimme den ersten Wochentag basierend auf der Region
-        if (region) {
-            if (sundayRegions.includes(region)) {
-                return 0; // Sonntag
-            }
-            if (saturdayRegions.includes(region)) {
-                return 6; // Samstag
-            }
-            return 1; // Montag (Standard)
-        }
-
-        // Fallback: Standard-Montag, wenn keine Region erkannt wird
-        return 1;
+    function getFirstDayOfWeek(myMoment) {
+        // Hole die erste-Wochentag-Informationen von momentForHeatmap
+        return myMoment.localeData().firstDayOfWeek();
     }
 
 
@@ -474,12 +464,8 @@
 
         const settings = getSettings($el) || {colors: {}}; // Fallback: Leeres `colors`-Objekt
 
-        if(settings.debug) {
-            console.log('getContributionColor:settings', getSettings($el));
-        }
-
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
-            if(settings.debug) {
+            if (settings.debug) {
                 console.error('Fehlende Farb-Einstellungen in settings:', settings);
             }
             return '#ff0000'; // Fallback-Farbe z. B. Rot
@@ -502,7 +488,7 @@
 
         const matchedKey = colorKeys.find(key => percentage <= key) || Math.max(...colorKeys);
 
-        if (settings.debug){
+        if (settings.debug) {
             // Debugprinzipien
             console.log({
                 count,
@@ -515,7 +501,6 @@
             });
         }
 
-
         return settings.colors[matchedKey] || settings.colors['1']; // Fallback: Standardfarbe
     }
 
@@ -527,11 +512,13 @@
         }
 
         const $element = $(this);
+        const momentForHeatmap = moment();
 
         const methodCalled = typeof options === 'string';
         const isInitialized = $element.data('heatmapSettings');
 
         if (!isInitialized) {
+            console.log('>>>>>>>>>>>>>><<', options);
             init($element, options, !methodCalled);
         }
 
@@ -546,8 +533,10 @@
                 if (setup.debug) {
                     console.log('heatmap:updateOptions', params);
                 }
-                $element.data('heatmapSettings', $.extend({}, DEFAULTS, setup, params || {}));
-                drawHeatmap($element);
+                const updatedSetup = $.extend({}, $.heatmap.DEFAULTS, setup, params || {});
+                const myMoment = moment().locale(updatedSetup.locale || $.heatmap.DEFAULTS.locale);
+                $element.data('heatmapSettings', updatedSetup);
+                drawHeatmap($element, myMoment);
             }
                 break;
         }

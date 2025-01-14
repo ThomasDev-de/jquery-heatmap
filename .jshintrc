@@ -8,6 +8,7 @@
   "sub": true,
   "asi": true,
   "globals": {
-    "jQuery": true
+    "jQuery": true,
+    "moment": true
   }
 }
