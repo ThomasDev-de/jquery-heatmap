@@ -463,7 +463,7 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        const settings = getSettings($el) || { colors: generateDynamicColors() };
+        const settings = getSettings($el) || { colors: $.heatmap.DEFAULTS.colors };
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
             if (settings.debug) {
@@ -489,7 +489,13 @@
             .map(Number) // Keys zu Zahlen umwandeln
             .sort((a, b) => a - b); // Aufsteigend sortiert
 
-        const matchedKey = colorKeys.find(key => scaledPercentage <= key) || Math.max(...colorKeys);
+        // Standard-Zuweisung
+        let matchedKey = colorKeys.find(key => scaledPercentage <= key) || Math.max(...colorKeys);
+
+        // Sicherstellung, dass 0% den Farbkey 0 zugewiesen bekommen
+        if (scaledPercentage === 0 && settings.colors['0'] !== undefined) {
+            matchedKey = 0;
+        }
 
         if (settings.debug) {
             console.log('DEBUG: Farbzuordnungskontrolle:', {
