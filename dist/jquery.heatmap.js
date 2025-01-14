@@ -70,9 +70,8 @@
             gutter: 2,
             cellSize: 14,
             colors: {
-                0: '#ebedf0',  // Neutral für count = 0 (unsichtbar)
-                0.1: '#d6f5d6', // Kleinster sichtbarer Wert (z. B. count = 1)
-                0.25: '#d4e157',
+                0: '#ebedf0',
+                0.25: '#c6e48b',
                 0.5: '#7bc96f',
                 0.75: '#239a3b',
                 1: '#196127'
@@ -464,7 +463,7 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        const settings = getSettings($el) || { colors: generateDynamicColors() };
+        const settings = getSettings($el);
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
             if (settings.debug) {
