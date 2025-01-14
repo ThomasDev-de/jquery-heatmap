@@ -61,8 +61,6 @@
             return this.DEFAULTS;
         },
         DEFAULTS: {
-            startDate: `${new Date().getFullYear()}-01-01`, // 1. Januar im aktuellen Jahr
-            endDate: `${new Date().getFullYear()}-12-31`,   // 31. Dezember im aktuellen Jahr
             locale: 'en-US',
             debug: false,
             classes: 'border border-5 w-100 p-5',
@@ -274,18 +272,10 @@
                 }, new Date(data[0].date));
             }
 
-            // Beginn der Woche erzwingen (findStartOfWeek)
-            startDate = findStartOfWeek(startDate, firstDayOfWeek);
+            // startDate = findStartOfWeek(startDate, firstDayOfWeek);
+            //
+            // endDate = getEndOfWeek(endDate, firstDayOfWeek);
 
-// Ende der Woche erzwingen (getEndOfWeek)
-            endDate = getEndOfWeek(endDate, firstDayOfWeek);
-
-            // startDate = adjustStartDate(
-            //     startDate,
-            //     settings.locale,
-            //     firstDayOfWeek,
-            //     settings.debug
-            // );
 
             // Wochen und Daten vorbereiten
             const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
@@ -294,24 +284,18 @@
                 console.log('Berechnete Wochen:', weeks);
             }
 
-            // **Min- und Max-Werte berechnen**
-// **Min-/Max-Berechnung sicherstellen**
             const counts = data
                 .map(entry => entry.count)
                 .filter(count => typeof count === 'number' && count >= 0); // Nur gültige Zahlenwerte
 
-// Standardwerte für Fallback
             const fallbackMin = 0;  // Fallback für minCount
             const fallbackMax = 1;  // Fallback für maxCount (z. B. 1 für eine minimale Skalierung)
 
-// Überprüfen, ob gültige Werte vorhanden sind
             const hasValidCounts = counts.length > 0;
 
-// Min-/Max-Werte berechnen oder Fallback verwenden
             const minCount = hasValidCounts ? Math.min(...counts) : fallbackMin;
             const maxCount = hasValidCounts ? Math.max(...counts) : fallbackMax;
 
-// Debugging für Min-/Max-Werte
             if (settings.debug) {
                 console.log('DEBUG: Min-/Max-Werte:', { minCount, maxCount, hasValidCounts });
             }
