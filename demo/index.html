@@ -26,7 +26,7 @@
             while (currentDate <= endDate) {
                 data.push({
                     date: currentDate.toISOString().split("T")[0], // Nur das Datum (YYYY-MM-DD)
-                    count: Math.floor(Math.random() * 10) // Zufällige Zahl zwischen 0 und 100
+                    count: Math.floor(Math.random() * 101) // Zufällige Zahl zwischen 0 und 100
                 });
                 currentDate.setDate(currentDate.getDate() + 1);
             }
@@ -51,7 +51,7 @@
             while (week < heatmapWord[0].length && currentDate.getFullYear() === year) {
                 for (let day = 0; day < 7 && currentDate.getFullYear() === year; day++) {
                     const char = heatmapWord[day]?.[week] || " ";
-                    const count = char.trim() !== "" ? (Math.floor(Math.random() * 21) + 20) : lowValue; // Hoher Wert für Nicht-Leerzeichen
+                    const count = char.trim() !== "" ? (Math.floor(Math.random() * 101) + 20) : lowValue; // Hoher Wert für Nicht-Leerzeichen
                     data.push({
                         date: currentDate.toISOString().split("T")[0],
                         count: count,

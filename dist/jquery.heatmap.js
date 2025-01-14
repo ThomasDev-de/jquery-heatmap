@@ -70,8 +70,9 @@
             gutter: 2,
             cellSize: 14,
             colors: {
-                0: '#ebedf0',
-                0.25: '#c6e48b',
+                0: '#ebedf0',  // Neutral für count = 0 (unsichtbar)
+                0.1: '#d6f5d6', // Kleinster sichtbarer Wert (z. B. count = 1)
+                0.25: '#d4e157',
                 0.5: '#7bc96f',
                 0.75: '#239a3b',
                 1: '#196127'
@@ -463,7 +464,7 @@
 
 // Unterstützungsfunktion: Farbskala für Contributions
     function getContributionColor($el, count, minCount, maxCount) {
-        const settings = getSettings($el) || { colors: $.heatmap.DEFAULTS.colors };
+        const settings = getSettings($el) || { colors: generateDynamicColors() };
 
         if (!settings.colors || Object.keys(settings.colors).length === 0) {
             if (settings.debug) {
@@ -472,12 +473,12 @@
             return '#ff0000'; // Standardfarbe (Fallback)
         }
 
-        // Direkte Zuordnung für count = 0
+        // **Sonderfall für count = 0**
         if (count === 0) {
-            return settings.colors['0']; // Farbe für keine Aktivität
+            return settings.colors['0'] || '#ebedf0'; // Basale Farbe (neutral für 0)
         }
 
-        // **Logarithmische Skalierung falls Werte groß sind**
+        // Logarithmische Skalierung für alle nicht-null-Werte
         const rangeLog = Math.log10(maxCount + 1) - Math.log10(minCount + 1);
         const percentage = (Math.log10(count + 1) - Math.log10(minCount + 1)) / rangeLog;
 
@@ -489,13 +490,14 @@
             .map(Number) // Keys zu Zahlen umwandeln
             .sort((a, b) => a - b); // Aufsteigend sortiert
 
-        // Standard-Zuweisung
         let matchedKey = colorKeys.find(key => scaledPercentage <= key) || Math.max(...colorKeys);
 
-        // Sicherstellung, dass 0% den Farbkey 0 zugewiesen bekommen
-        if (scaledPercentage === 0 && settings.colors['0'] !== undefined) {
-            matchedKey = 0;
+        // Minimal sichtbare Farbe für den kleinsten sichtbaren Wert (z.B. count = 1)
+        if (count === minCount && settings.colors['0.1']) {
+            matchedKey = 0.1; // Optional: definiere Key `0.1` für den kleinsten sichtbaren Wert
         }
+
+        let color = settings.colors[matchedKey] || settings.colors['1']; // Standardfarbe (Fallback)
 
         if (settings.debug) {
             console.log('DEBUG: Farbzuordnungskontrolle:', {
@@ -505,11 +507,11 @@
                 rangeLog,
                 scaledPercentage,
                 matchedKey,
-                color: settings.colors[matchedKey],
+                color
             });
         }
 
-        return settings.colors[matchedKey] || settings.colors['1']; // Standardfarbe (Fallback)
+        return color;
     }
 
     function adjustStartDate(startDate, locale, firstDayOfWeek, debug) {
