@@ -278,19 +278,32 @@
                 console.log('heatmap:drawHeatmap:data', data);
             }
 
-            // Daten einmalig in eine Map umwandeln (für schnelle Suche)
             const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
 
-            // Min- und Max-Werte berechnen
-            const counts = data.map(entry => entry.count);
+            // **Min- und Max-Werte berechnen**
+            // **Min-/Max-Berechnung sicherstellen**
+            const counts = data
+                .map(entry => entry.count)
+                .filter(count => typeof count === 'number' && count >= 0); // Nur gültige Zahlen zulassen
+
+            if (counts.length === 0) {
+                throw new Error('Keine gültigen Werte für die Min-/Max-Berechnung gefunden.');
+            }
+
             const minCount = Math.min(...counts);
             const maxCount = Math.max(...counts);
+
+            // Debugging für Min-/Max-Werte
+            if (settings.debug) {
+                console.log('DEBUG: Min-/Max-Werte:', {minCount, maxCount});
+            }
 
             // Farben cachen
             const colorCache = {};
 
             function getCachedColor(count) {
                 const cacheKey = `${count}-${minCount}-${maxCount}`;
+
                 if (colorCache[cacheKey]) {
                     return colorCache[cacheKey];
                 }
@@ -471,6 +484,16 @@
 
         // Begrenze percentage auf [0, 1]
         percentage = Math.max(0, Math.min(percentage, 1));
+
+        if (settings.debug) {
+            console.log('DEBUG: Farbzuordnung im AJAX-Fall:', {
+                count,
+                minCount,
+                maxCount,
+                range,
+                percentage,
+            });
+        }
 
         const colorKeys = Object.keys(settings.colors)
             .map(Number) // Keys zu Zahlen
