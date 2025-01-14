@@ -92,14 +92,6 @@
         const locale = setup.locale || $.heatmap.DEFAULTS.locale;
         localizedMoment.locale(locale); // Setze Locale
 
-        const firstDayOfWeek = getFirstDayOfWeek(localizedMoment);
-        setup.startDate = adjustStartDate(
-            setup.startDate,
-            locale,
-            firstDayOfWeek,
-            setup.debug
-        );
-
         $el.data('heatmapSettings', setup);
 
         if (setup.debug) {
@@ -129,24 +121,18 @@
             xhr = null;
         }
 
-        const query = {
-            startDate: settings.startDate || `${new Date().getFullYear()}-01-01`,
-            endDate: settings.endDate || `${new Date().getFullYear()}-12-31`,
-        };
+        const query = {};
 
         // Benutzerdefinierte Query-Parameter einfügen
         const customQuery = typeof settings.queryParams === 'function' ? settings.queryParams(query) : {};
-        const finalQuery = {
-            ...customQuery, // Benutzerdefinierte Werte
-            ...query,       // Standardwerte wie Start-/Enddatum
-        };
+
 
         try {
             // Initialisierung der AJAX-Anfrage
             xhr = $.ajax({
                 url: settings.data,  // URL der Anfrage
                 method: 'GET',       // HTTP-Methode
-                data: finalQuery,    // Query-Parameter
+                data: customQuery,    // Query-Parameter
                 dataType: 'json'    // Antwort automatisch als JSON parsen
             });
 
@@ -243,15 +229,6 @@
             console.log('heatmap:drawHeatmap');
         }
 
-        const currentYear = new Date().getFullYear();
-        const startDate = settings.startDate || `${currentYear}-01-01`;
-        const endDate = settings.endDate || `${currentYear}-12-31`;
-
-        if (settings.debug) {
-            console.log(`Heatmap-Zeitraum: ${startDate} bis ${endDate}`);
-        }
-        const monthFormatter = new Intl.DateTimeFormat(myMoment.locale(), {month: 'short'});
-        const firstDayOfWeek = getFirstDayOfWeek(myMoment);
 
         // Zell- und Abstandseinstellungen
         let gutter = (settings.gutter !== undefined ? settings.gutter : '2px');
@@ -261,15 +238,12 @@
         const cellSize = settings.cellSize || 14;
         const cellSizePx = `${cellSize}px`;
 
-        // Wochen und Daten vorbereiten
-        const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
-
         $el.empty();
 
         // Daten abrufen
         getData($el).then(rawData => {
             const data = Array.isArray(rawData) ? rawData : JSON.parse(rawData);
-
+            const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
             if (!Array.isArray(data)) {
                 throw new Error('Die erhaltenen Daten sind kein Array.');
             }
@@ -277,8 +251,48 @@
             if (settings.debug) {
                 console.log('heatmap:drawHeatmap:data', data);
             }
+            const monthFormatter = new Intl.DateTimeFormat(myMoment.locale(), {month: 'short'});
+            const firstDayOfWeek = getFirstDayOfWeek(myMoment);
 
-            const dataMap = new Map(data.map(entry => [entry.date, entry.count]));
+            let startDate;
+            let endDate;
+
+            if (data.length === 0) {
+                const currentYear = new Date().getFullYear();
+                startDate = new Date(`${currentYear}-01-01`);
+                endDate = new Date(`${currentYear}-12-31`);
+            } else {
+                // Start- und Enddatum aus den Daten berechnen, früheste und späteste Daten ermitteln
+                startDate = data.reduce((earliest, entry) => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate < earliest ? entryDate : earliest;
+                }, new Date(data[0].date));
+
+                endDate = data.reduce((latest, entry) => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate > latest ? entryDate : latest;
+                }, new Date(data[0].date));
+            }
+
+            // Beginn der Woche erzwingen (findStartOfWeek)
+            startDate = findStartOfWeek(startDate, firstDayOfWeek);
+
+// Ende der Woche erzwingen (getEndOfWeek)
+            endDate = getEndOfWeek(endDate, firstDayOfWeek);
+
+            // startDate = adjustStartDate(
+            //     startDate,
+            //     settings.locale,
+            //     firstDayOfWeek,
+            //     settings.debug
+            // );
+
+            // Wochen und Daten vorbereiten
+            const weeks = calculateWeeks($el, startDate, endDate, firstDayOfWeek);
+
+            if (settings.debug) {
+                console.log('Berechnete Wochen:', weeks);
+            }
 
             // **Min- und Max-Werte berechnen**
 // **Min-/Max-Berechnung sicherstellen**
@@ -357,8 +371,6 @@
                 rowGap: gutter,
             });
 
-            const heatmapYear = new Date(settings.startDate || new Date().getFullYear()).getFullYear();
-            const firstDayOfWeek = getFirstDayOfWeek(myMoment); // Gibt 0 (So) oder 1 (Mo) je nach Locale zurück.
             Array.from({length: 7}, (_, i) => (firstDayOfWeek + i) % 7)
                 .forEach(dayOffset => {
                     const tempDate = myMoment.clone().isoWeekday(dayOffset === 0 ? 7 : dayOffset); // 1=Mo, 7=So
@@ -572,13 +584,13 @@
                 const updatedSetup = $.extend({}, $.heatmap.DEFAULTS, setup, params || {});
                 const myMoment = moment().locale(updatedSetup.locale || $.heatmap.DEFAULTS.locale);
 
-                const firstDayOfWeek = getFirstDayOfWeek(myMoment);
-                updatedSetup.startDate = adjustStartDate(
-                    updatedSetup.startDate,
-                    updatedSetup.locale,
-                    firstDayOfWeek,
-                    updatedSetup.debug
-                );
+                // const firstDayOfWeek = getFirstDayOfWeek(myMoment);
+                // updatedSetup.startDate = adjustStartDate(
+                //     updatedSetup.startDate,
+                //     updatedSetup.locale,
+                //     firstDayOfWeek,
+                //     updatedSetup.debug
+                // );
 
                 $element.data('heatmapSettings', updatedSetup);
                 drawHeatmap($element, myMoment);

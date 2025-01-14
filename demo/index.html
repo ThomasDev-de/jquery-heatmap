@@ -20,18 +20,26 @@
     (function ($) {
         function generateRandomDataForYear(year = 2025) {
             const data = [];
-            const startDate = new Date(year+"-01-01");
-            const endDate = new Date(year+"-12-31");
-            let currentDate = startDate;
+            const startDate = new Date(`${year}-01-01`);
+            const endDate = new Date(`${year}-12-31`);
+            let currentDate = new Date(startDate); // Unabhängige Kopie des Startdatums erstellen
+
             while (currentDate <= endDate) {
                 data.push({
-                    date: currentDate.toISOString().split("T")[0], // Nur das Datum (YYYY-MM-DD)
+                    date: currentDate.toISOString().split('T')[0], // Nur das Datum (YYYY-MM-DD)
                     count: Math.floor(Math.random() * 101) // Zufällige Zahl zwischen 0 und 100
                 });
-                currentDate.setDate(currentDate.getDate() + 1);
+
+                // Statt `setDate` ein unabhängiges neues Datum erzeugen
+                currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
             }
             return data;
         }
+
+        const testData = generateRandomDataForYear(2025);
+        console.log(testData);
+        const firstEntry = testData.find(entry => entry.date === '2025-01-01');
+        console.log('Daten für den 1. Januar:', firstEntry);
 
         function generateHeatmapDataForWord() {
             const data = [];
