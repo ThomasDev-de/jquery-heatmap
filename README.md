@@ -11,7 +11,6 @@ It maps data intensity to color variations, providing an intuitive overview of y
 
 - **Data-Driven Visualization:** Displays data in a heatmap where the color intensity corresponds to data values.
 - **Dynamic Data Handling:** Supports both static data arrays and dynamic data fetching via AJAX requests.
-  The `startDate` and `endDate` parameters are automatically included in query strings for data fetching.
 - **Custom Query Parameters:** Define additional query parameters dynamically using the `queryParams` function without
   overriding standard values like `startDate` and `endDate`.
 - **Customizable Design:** Adjust cell sizes, the gap (gutter) between cells, and color gradients.
@@ -22,18 +21,16 @@ It maps data intensity to color variations, providing an intuitive overview of y
 
 ---
 
-## What's New in Version 1.0.1
+## What's New in Version 1.0.3
 
 1. **Default Date Values:**
-    - The `startDate` and `endDate` are now automatically set to the first and last day of the current year if not
-      explicitly defined.
+    - Removed outdated options `startDate` and `endDate`. Date handling is now fully dynamic based on the provided data.
 
 2. **Query Parameters (`queryParams`):**
-    - A new function allows users to dynamically add query parameters without altering the default ones (`startDate` and
-      `endDate` are never overridden).
+    - A new function allows users to add query parameters dynamically as part of the query string.
 
 3. **Week Calculation:**
-    - Weeks are now calculated dynamically based on custom `startDate` and `endDate`.
+    - Weeks are now calculated dynamically without the need for `startDate` or `endDate` configuration.
 
 4. **Enhanced Color Mapping:**
     - Define color gradients for different data intensity levels with flexible customization.
@@ -70,8 +67,8 @@ It maps data intensity to color variations, providing an intuitive overview of y
    ```javascript
    $('#heatmap-container').heatmap({
        data: [/* Your data array or API URL */],
-       startDate: '2023-01-01',
-       endDate: '2023-12-31',
+       // Dates automatically inferred from data, or configurable if necessary,
+       // Example: startDate: '2023-01-01', endDate: '2023-12-31',
        locale: 'en-US',
        // ...other options
    });
@@ -84,10 +81,7 @@ It maps data intensity to color variations, providing an intuitive overview of y
 | Option               | Description                                                                                                  | Default Value                                                              |
 |----------------------|--------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | **`data`**           | Array of data points or a URL from which data will be fetched.                                               | `null`                                                                     |
-| **`startDate`**      | Start date of the heatmap. Defaults to the first day of the current year.                                    | `${currentYear}-01-01`                                                     |
-| **`endDate`**        | End date of the heatmap. Defaults to the last day of the current year.                                       | `${currentYear}-12-31`                                                     |
-| **`queryParams`**    | A function returning additional query parameters. Example: `{ locale: 'en-US' }`.                            | `() => {}`                                                                 |
-| **`gutter`**         | The gap between heatmap cells (e.g., `2px`, `4px`).                                                          | `2px`                                                                      |
+| **`queryParams`**    | Function for adding query parameters dynamically (e.g., `{ locale: 'en-US' }`).                              | `() => {}`                                                                 |
 | **`cellSize`**       | The size of each heatmap cell in pixels.                                                                     | `14px`                                                                     |
 | **`colors`**         | An object defining the heatmap's color gradient. Keys are thresholds between `0` and `1`. Values are colors. | See gradient below                                                         |
 | **`locale`**         | Locale for displaying dates and determining the first day of the week.                                       | `en-US`                                                                    |
@@ -108,8 +102,9 @@ $('#heatmap-container').heatmap(options);
 
 ```javascript
 $('#heatmap-container').heatmap('updateOptions', {
-    startDate: '2024-01-01',
-    endDate: '2024-06-30',
+    data: [...urlOrDataSet],
+    cellSize: 30,
+    ...
 });
 ```
 
@@ -147,12 +142,13 @@ This plugin supports specific events, allowing developers to respond to various 
 ```javascript
 $('#heatmap-container').heatmap({
     data: [
-        {date: '2023-01-01', count: 5},
-        {date: '2023-01-02', count: 10},
-        // Add more data points here...
+        {date: '2024-01-01', count: 5},
+        {date: '2024-01-02', count: 10},
+        // Dynamic date handling relies on this data array
     ],
-    startDate: '2023-01-01',
-    endDate: '2023-12-31',
+
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
     colors: {
         0: '#ebedf0',
         0.25: '#c6e48b',
@@ -188,37 +184,106 @@ This can be useful for development and error diagnosis:
 
 ```javascript
 $('#heatmap-container').heatmap({
-    debug: true, // Enable debugging
-    startDate: '2023-01-01',
-    endDate: '2023-12-31',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
 });
 ```
 
 ---
 
-## Color Gradient
+### Heatmap Color Customization
 
-By default, the heatmap's color intensity is mapped to the following scale:
+The `colors` option in the heatmap plugin defines the color intensity mapping for the heatmap cells.
+The colors represent different intensity levels based on the data provided.
+Each key in the `colors` object is a threshold between `0` and `1`,
+and the corresponding value is the color that will be applied.
 
-| Threshold (%) | Color     |
-|---------------|-----------|
-| 0             | `#ebedf0` |
-| 25            | `#c6e48b` |
-| 50            | `#7bc96f` |
-| 75            | `#239a3b` |
-| 100           | `#196127` |
+---
 
-You can customize it by passing your own `colors` configuration:
+#### Default Color Mapping
+
+By default, the plugin provides the following color mapping:
+
+```
+colors: {
+    0: '#ebedf0',   // No intensity (lowest)
+    0.25: '#c6e48b', // Low intensity
+    0.5: '#7bc96f',  // Medium intensity
+    0.75: '#239a3b', // High intensity
+    1: '#196127'     // Maximum intensity
+}
+```
+
+- **0:** This corresponds to no activity or zero intensities and typically uses a light, almost "empty" color.
+- **1:** This is the highest activity or maximum intensity and uses the most vibrant or darkest defined color.
+- Intermediate thresholds (e.g., `0.25`, `0.5`, and `0.75`) use colors to provide a gradient effect.
+
+---
+
+#### How Colors Work
+
+Each value (`count`) in your data is converted to a relative intensity based on the range of the data
+(minimum to maximum counts).
+The plugin calculates the position of the data point and determines the corresponding color from the `colors` map.
+
+The calculation respects the following principles:
+- **Logarithmic scaling:** Data is scaled logarithmically to ensure even distribution of color across high-variable datasets.
+- **Clamping:** Values below the minimum or above the maximum are clamped to use the lowest or highest defined colors, respectively.
+
+---
+
+#### Example: Custom Color Mapping
+
+You can provide your own custom mapping of thresholds to colors based on the specific requirements of your heatmap visualization.
+Here's an example:
 
 ```javascript
 $('#heatmap-container').heatmap({
     colors: {
-        0: '#f0f0f0',
-        0.5: '#00ff00',
-        1: '#0000ff'
+        0: '#f0f0f0',  // No intensity
+        0.3: '#add8e6', // Light blue for low intensity
+        0.6: '#0000ff', // Blue for medium intensity
+        1: '#00008b'    // Dark blue for high intensity
     }
 });
 ```
+
+In this example:
+- Data points that correspond to approximately 30% of the maximum intensity will appear light blue.
+- Data points at 60% of the maximum intensity will appear as medium blue.
+- The highest intensity will appear as dark blue.
+
+---
+
+#### Gradient Tipps
+
+- Use light colors for low thresholds (e.g., `0`) and darker or more vibrant colors for high thresholds (e.g., `1`) to provide a clear visual hierarchy.
+- The `colors` object supports any CSS-compatible color format, such as HEX (`#ffffff`), RGB (`rgb(255, 255, 255)`), or named colors (`red`).
+- For large datasets with higher variability, consider using more intermediate threshold levels to create a smoother gradient.
+
+---
+
+#### Example: Smooth Gradient
+
+For a smoother gradient with multiple intermediate values:
+
+```javascript
+$('#heatmap-container').heatmap({
+    colors: {
+        0: '#ffffff',  // White (lowest intensity)
+        0.1: '#f7d7d0',
+        0.2: '#f0a29a',
+        0.5: '#e55241',
+        0.75: '#be2d1b',
+        1: '#7a1410'   // Dark red (highest intensity)
+    }
+});
+```
+
+The more intermediate values you define, the smoother the gradient will appear.
+
+By customizing the `colors` option,
+you can tailor the heatmap's appearance to fit your project's visual requirements more effectively.
 
 ---
 

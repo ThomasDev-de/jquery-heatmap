@@ -12,8 +12,6 @@
  *
  * Settings:
  * - data (Array | String): Either an array of data points or a URL from which data can be fetched.
- * - startDate (String): The start date for the heatmap in the format 'YYYY-MM-DD' (default: first day of the current year).
- * - endDate (String): The end date for the heatmap in the format 'YYYY-MM-DD' (default: last day of the current year).
  * - locale (String): The locale identifier for date formatting and first day of the week calculation (default: 'en-US').
  * - cellSize (Number): The size of each day cell in pixels (default: 14px).
  * - gutter (String | Number): Space between cells or weeks (default: '2px').
@@ -31,8 +29,6 @@
  * Example:
  * $('#heatmap').heatmap({
  *    data: 'https://example.com/data',
- *    startDate: '2023-01-01',
- *    endDate: '2023-12-31',
  *    locale: 'en-US',
  *    cellSize: 14,
  *    gutter: '4px',
