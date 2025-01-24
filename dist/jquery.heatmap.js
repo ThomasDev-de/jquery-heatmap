@@ -3,7 +3,7 @@
 /*!
  * Heatmap Plugin
  * Author: Thomas Kirsch <t.kirsch@webcito.de>
- * Version: 1.0.3
+ * Version: 1.0.4
  * License: MIT
  * Description: A jQuery plugin to create and render an interactive heatmap visualization.
  *
@@ -407,6 +407,10 @@
                 // Tageszellen rendern
                 week.forEach(dayEntry => {
                     const cell = $('<div class="heatmap-cell"></div>');
+                    const today = new Date();
+                    const cellDate = new Date(Date.UTC(dayEntry.date.getFullYear(), dayEntry.date.getMonth(), dayEntry.date.getDate()));
+
+
                     cell.css({
                         width: cellSizePx,
                         height: cellSizePx,
@@ -414,6 +418,14 @@
                         borderRadius: parseInt(gutter) > 2 ? '2px' : gutter,
                         cursor: 'pointer',
                     });
+
+                    if (cellDate.toDateString() === today.toDateString()) {
+                        cell.css('border', '1px solid #ccc'); // Dezenter grauer Rahmen
+                        // Optional:  HINTERGRUNDFARBE anpassen. Zuerst die aktuelle Farbe ermitteln
+                        const currentColor = cell.css('background-color');
+                        cell.css('background-color', shadeColor(currentColor, 0.2)); // 20% heller
+                    }
+
 
                     if (dayEntry.date) {
                         cell
@@ -443,6 +455,26 @@
 
         });
     }
+    function shadeColor(color, percent) {
+        let R = parseInt(color.substring(1,3),16);
+        let G = parseInt(color.substring(3,5),16);
+        let B = parseInt(color.substring(5,7),16);
+
+        R = parseInt(R * (100 + percent) / 100);
+        G = parseInt(G * (100 + percent) / 100);
+        B = parseInt(B * (100 + percent) / 100);
+
+        R = (R<255)?R:255;
+        G = (G<255)?G:255;
+        B = (B<255)?B:255;
+
+        const RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+        const GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+        const BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+
+        return "#"+RR+GG+BB;
+    }
+
 
     function findStartOfWeek(date, firstDayOfWeek) {
         const currentDay = date.getDay(); // Wochentag des aktuellen Datums (0=Sonntag, 6=Samstag)
