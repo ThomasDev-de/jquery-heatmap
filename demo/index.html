@@ -90,16 +90,12 @@
                     gutter: 0,
                     cellSize: 24,
                     locale: 'de',
-                    startDate: '2024-01-01',
-                    endDate: '2024-09-08',
                     data: generateHeatmapDataForWord()
                 })
 
             $('#heatmap_3')
                 .heatmap({
                     locale: 'fr',
-                    startDate: '2024-01-01',
-                    endDate: '2024-12-31',
                     data: generateRandomDataForYear(2024),
                     colors: {
                         0: '#ebedf0',   // Kein Wert
@@ -113,8 +109,6 @@
 
             $('#heatmap_2')
                 .heatmap({
-                    startDate: '2025-01-01',
-                    endDate: '2025-12-31',
                     locale: 'en',
                     data: generateRandomDataForYear(2025)
                 })
