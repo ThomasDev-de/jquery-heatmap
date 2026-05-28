@@ -25,9 +25,6 @@
     "components/jquery": "^3",
     "moment/moment": "^2"
   },
-  "require-dev": {
-    "roave/security-advisories": "dev-latest"
-  },
   "scripts": {
     "test": "echo 'No tests specified'",
     "post-install-cmd": "echo 'Thank you for installing webcito/jquery-heatmap!'"
