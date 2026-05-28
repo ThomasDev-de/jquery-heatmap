@@ -22,8 +22,8 @@
     }
   ],
   "require": {
-    "components/jquery": "^3",
-    "moment/moment": "^2"
+    "components/jquery": "^3.6 || ^3.7",
+    "moment/moment": "^2.29"
   },
   "scripts": {
     "test": "echo 'No tests specified'",
