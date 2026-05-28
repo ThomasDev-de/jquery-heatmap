@@ -25,12 +25,6 @@
     "components/jquery": "^3",
     "moment/moment": "^2"
   },
-  "config": {
-    "allow-plugins": {
-      "composer/installers": true,
-      "oomphinc/composer-installers-extender": true
-    }
-  },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
   },
