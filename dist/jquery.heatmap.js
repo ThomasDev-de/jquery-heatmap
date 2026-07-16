@@ -77,6 +77,7 @@
                 const id = $el.attr('id') || '';
                 return id + ' ' + date.toLocaleDateString() + ' - ' + count;
             },
+            click: null,
             queryParams(p) {
                 return p;
             }
@@ -440,6 +441,10 @@
                                 'title',
                                 settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count, $el) || ''
                             );
+                        
+                        if (typeof settings.click === "function") {
+	                        cell.on ('click', function()  { settings.click(cell); });
+                        }
                     }
 
                     if (typeof settings.click === 'function') {
