@@ -16,29 +16,36 @@ It maps data intensity to color variations, providing an intuitive overview of y
 - **Customizable Design:** Adjust cell sizes, the gap (gutter) between cells, and color gradients.
 - **Localization Support:** Automatically adjusts week start days and date formatting based on locale settings.
 - **Interactive Tooltips:** Displays tooltips with date and associated data values when hovering over cells.
+- **Cell Click Callback:** Attach custom behavior when a heatmap cell is clicked.
 - **Comprehensive Error Handling:** Handles errors from data fetching or invalid input gracefully.
 - **Easy Integration:** Designed with an intuitive jQuery syntax for effortless integration into web projects.
 
 ---
 
-## What's New in Version 1.0.3
+## What's New in Version 1.0.5
 
-1. **Default Date Values:**
+1. **Cell Click Callback:**
+    - Added a `click` option for reacting to individual heatmap cell clicks.
+
+2. **Complete Demo Page:**
+    - The demo page now showcases multiple English examples, custom colors, runtime updates, and click handling.
+
+3. **Default Date Values:**
     - Removed outdated options `startDate` and `endDate`. Date handling is now fully dynamic based on the provided data.
 
-2. **Query Parameters (`queryParams`):**
+4. **Query Parameters (`queryParams`):**
     - A new function allows users to add query parameters dynamically as part of the query string.
 
-3. **Week Calculation:**
+5. **Week Calculation:**
     - Weeks are now calculated dynamically without the need for `startDate` or `endDate` configuration.
 
-4. **Enhanced Color Mapping:**
+6. **Enhanced Color Mapping:**
     - Define color gradients for different data intensity levels with flexible customization.
 
-5. **Debugging Option:**
+7. **Debugging Option:**
     - A new `debug` option allows you to log settings and queries to the browser console.
 
-6. **Automatic First Day of the Week:**
+8. **Automatic First Day of the Week:**
     - The plugin determines the first day of the week automatically based on the provided locale.
 
 ---
@@ -87,6 +94,7 @@ It maps data intensity to color variations, providing an intuitive overview of y
 | **`locale`**         | Locale for displaying dates and determining the first day of the week.                                       | `en-US`                                                                    |
 | **`debug`**          | If `true`, settings and queries are logged to the console.                                                   | `false`                                                                    |
 | **`titleFormatter`** | A function to format the tooltip content, receiving locale, date, and count as arguments.                    | `(locale, date, count) => date.toLocaleDateString(locale) + " - " + count` |
+| **`click`**          | Function called when a heatmap cell is clicked. Receives the jQuery cell, the day entry, and the click event. | `null`                                                                     |
 
 ---
 
@@ -171,6 +179,20 @@ $('#heatmap-container').heatmap({
             locale: 'en-US',
             userId: 123, // Add custom parameters
         };
+    },
+});
+```
+
+### Cell Click Callback:
+
+Use the `click` option to react to individual heatmap cells:
+
+```javascript
+$('#heatmap-container').heatmap({
+    data: '/api/data',
+    click: function (cell, dayEntry, event) {
+        console.log(cell.attr('title'));
+        console.log(dayEntry.date, dayEntry.count);
     },
 });
 ```

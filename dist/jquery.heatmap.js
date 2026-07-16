@@ -3,7 +3,7 @@
 /*!
  * Heatmap Plugin
  * Author: Thomas Kirsch <t.kirsch@webcito.de>
- * Version: 1.0.4
+ * Version: 1.0.5
  * License: MIT
  * Description: A jQuery plugin to create and render an interactive heatmap visualization.
  *
@@ -17,6 +17,7 @@
  * - gutter (String | Number): Space between cells or weeks (default: '2px').
  * - colors (Object): A map of contribution levels to colors (e.g. `{ 0: '#ebedf0', 1: '#196127' }`).
  * - queryParams (Function): A function returning additional query parameters for data fetching.
+ * - click (Function|null): Callback triggered when a heatmap cell is clicked.
  * - debug (Boolean): If true, logs internal events and settings to the console (default: `false`).
  * - titleFormatter (Function): A function to format tooltips for heatmap cells.
  *
@@ -33,6 +34,7 @@
  *    cellSize: 14,
  *    gutter: '4px',
  *    titleFormatter: (locale, date, count) => `${date.toLocaleDateString(locale)} - ${count}`,
+ *    click: ($cell, dayEntry, event) => console.log($cell.attr('title'), dayEntry, event),
  *    colors: {
  *        0: '#ebedf0',
  *        0.25: '#c6e48b',
@@ -63,6 +65,7 @@
             data: null,
             gutter: 2,
             cellSize: 14,
+            click: null,
             colors: {
                 0: '#ebedf0',
                 0.25: '#c6e48b',
@@ -437,6 +440,12 @@
                                 'title',
                                 settings.titleFormatter(settings.locale, dayEntry.date, dayEntry.count, $el) || ''
                             );
+                    }
+
+                    if (typeof settings.click === 'function') {
+                        cell.on('click', function (event) {
+                            settings.click.call(this, cell, dayEntry, event);
+                        });
                     }
 
                     weekColumn.append(cell);
